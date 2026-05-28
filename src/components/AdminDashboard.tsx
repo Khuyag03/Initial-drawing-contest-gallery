@@ -1,0 +1,356 @@
+"use client";
+
+import { FormEvent, useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import clsx from "clsx";
+import { deleteDrawing, logoutAdmin, updateDrawing, uploadDrawing } from "@/app/actions/admin";
+import { AGE_CATEGORIES, type ActionState, type AdminDrawingResult, type AgeCategory } from "@/types";
+
+type SortKey = "created" | "votes" | "title";
+
+type AdminDashboardProps = {
+  drawings: AdminDrawingResult[];
+};
+
+const idleState: ActionState = { status: "idle", message: "" };
+
+function escapeCsv(value: string | number | null) {
+  const text = String(value ?? "");
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+export function AdminDashboard({ drawings }: AdminDashboardProps) {
+  const router = useRouter();
+  const [filter, setFilter] = useState<AgeCategory | "all">("all");
+  const [sort, setSort] = useState<SortKey>("votes");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [notice, setNotice] = useState<ActionState>(idleState);
+  const [isPending, startTransition] = useTransition();
+
+  const filteredDrawings = useMemo(() => {
+    const rows = filter === "all" ? drawings : drawings.filter((drawing) => drawing.age_category === filter);
+    return [...rows].sort((left, right) => {
+      if (sort === "votes") {
+        return right.vote_count - left.vote_count;
+      }
+
+      if (sort === "title") {
+        return left.title.localeCompare(right.title);
+      }
+
+      return new Date(right.created_at).getTime() - new Date(left.created_at).getTime();
+    });
+  }, [drawings, filter, sort]);
+
+  const totalVotes = drawings.reduce((sum, drawing) => sum + drawing.vote_count, 0);
+
+  function runAction(action: (formData: FormData) => Promise<ActionState>, formData: FormData, onSuccess?: () => void) {
+    setNotice(idleState);
+    startTransition(async () => {
+      const result = await action(formData);
+      setNotice(result);
+
+      if (result.status === "success") {
+        onSuccess?.();
+        router.refresh();
+      }
+    });
+  }
+
+  function handleUpload(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    runAction(uploadDrawing, formData, () => form.reset());
+  }
+
+  function handleUpdate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    runAction(updateDrawing, formData, () => setEditingId(null));
+  }
+
+  function handleDelete(drawingId: string, title: string) {
+    if (!window.confirm(`"${title}" зургийг устгах уу?`)) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("id", drawingId);
+    runAction(deleteDrawing, formData);
+  }
+
+  function exportCsv() {
+    const header = ["Title", "Child name/code", "Age category", "Votes", "Created at"];
+    const rows = filteredDrawings.map((drawing) => [
+      drawing.title,
+      drawing.child_name,
+      drawing.age_category,
+      drawing.vote_count,
+      drawing.created_at
+    ]);
+    const csv = [header, ...rows].map((row) => row.map(escapeCsv).join(",")).join("\n");
+    const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `childrens-day-vote-results-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  return (
+    <main className="min-h-screen px-4 py-6 sm:px-6 lg:px-10">
+      <section className="mx-auto max-w-7xl">
+        <header className="flex flex-col gap-5 border-b border-neutral-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="mb-3 text-xs font-medium uppercase tracking-[0.16em] text-neutral-500">
+              Админ хэсэг
+            </p>
+            <h1 className="text-3xl font-semibold text-neutral-950 sm:text-5xl">Саналын удирдлага</h1>
+          </div>
+          <form action={logoutAdmin}>
+            <button
+              type="submit"
+              className="rounded-full border border-neutral-300 px-5 py-2 text-sm font-semibold text-neutral-700 transition hover:border-neutral-950 hover:text-neutral-950"
+            >
+              Гарах
+            </button>
+          </form>
+        </header>
+
+        <div className="mt-6 grid gap-4 sm:grid-cols-3">
+          <div className="rounded-lg border border-neutral-200 bg-white p-5">
+            <p className="text-sm text-neutral-500">Нийт бүтээл</p>
+            <p className="mt-2 text-3xl font-semibold text-neutral-950">{drawings.length}</p>
+          </div>
+          <div className="rounded-lg border border-neutral-200 bg-white p-5">
+            <p className="text-sm text-neutral-500">Нийт санал</p>
+            <p className="mt-2 text-3xl font-semibold text-neutral-950">{totalVotes}</p>
+          </div>
+          <div className="rounded-lg border border-neutral-200 bg-white p-5">
+            <p className="text-sm text-neutral-500">Ангилал</p>
+            <p className="mt-2 text-3xl font-semibold text-neutral-950">{AGE_CATEGORIES.length}</p>
+          </div>
+        </div>
+
+        {notice.message ? (
+          <p
+            className={clsx(
+              "mt-5 rounded-lg px-4 py-3 text-sm font-medium",
+              notice.status === "success"
+                ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100"
+                : "bg-red-50 text-red-700 ring-1 ring-red-100"
+            )}
+          >
+            {notice.message}
+          </p>
+        ) : null}
+
+        <section className="mt-8 grid gap-8 lg:grid-cols-[380px_1fr]">
+          <aside className="h-fit rounded-lg border border-neutral-200 bg-white p-5">
+            <h2 className="text-xl font-semibold text-neutral-950">Шинэ зураг нэмэх</h2>
+            <form className="mt-5 space-y-4" onSubmit={handleUpload}>
+              <label className="block">
+                <span className="text-sm font-medium text-neutral-700">Зургийн нэр</span>
+                <input
+                  name="title"
+                  className="mt-2 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-neutral-950 focus:bg-white"
+                  required
+                />
+              </label>
+              <label className="block">
+                <span className="text-sm font-medium text-neutral-700">Хүүхдийн нэр эсвэл код</span>
+                <input
+                  name="childName"
+                  className="mt-2 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-neutral-950 focus:bg-white"
+                />
+              </label>
+              <label className="block">
+                <span className="text-sm font-medium text-neutral-700">Насны ангилал</span>
+                <select
+                  name="ageCategory"
+                  className="mt-2 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-neutral-950 focus:bg-white"
+                  required
+                >
+                  {AGE_CATEGORIES.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-sm font-medium text-neutral-700">Зураг</span>
+                <input
+                  name="image"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  className="mt-2 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm outline-none transition file:mr-3 file:rounded-full file:border-0 file:bg-neutral-950 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white focus:border-neutral-950 focus:bg-white"
+                  required
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={isPending}
+                className="w-full rounded-full bg-neutral-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:bg-neutral-400"
+              >
+                {isPending ? "Түр хүлээнэ үү" : "Нэмэх"}
+              </button>
+            </form>
+          </aside>
+
+          <section>
+            <div className="mb-4 flex flex-col gap-3 rounded-lg border border-neutral-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <label className="text-sm font-medium text-neutral-700">
+                  Насны ангилал
+                  <select
+                    value={filter}
+                    onChange={(event) => setFilter(event.target.value as AgeCategory | "all")}
+                    className="mt-2 block w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 outline-none focus:border-neutral-950 sm:w-36"
+                  >
+                    <option value="all">Бүгд</option>
+                    {AGE_CATEGORIES.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="text-sm font-medium text-neutral-700">
+                  Эрэмбэлэх
+                  <select
+                    value={sort}
+                    onChange={(event) => setSort(event.target.value as SortKey)}
+                    className="mt-2 block w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 outline-none focus:border-neutral-950 sm:w-40"
+                  >
+                    <option value="votes">Санал</option>
+                    <option value="created">Огноо</option>
+                    <option value="title">Нэр</option>
+                  </select>
+                </label>
+              </div>
+              <button
+                type="button"
+                onClick={exportCsv}
+                className="rounded-full border border-neutral-300 px-5 py-3 text-sm font-semibold text-neutral-800 transition hover:border-neutral-950"
+              >
+                Үр дүн татах
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {filteredDrawings.map((drawing) => (
+                <article key={drawing.id} className="rounded-lg border border-neutral-200 bg-white p-4">
+                  <div className="grid gap-4 sm:grid-cols-[112px_1fr_auto] sm:items-center">
+                    <img
+                      src={drawing.image_url}
+                      alt={drawing.title}
+                      className="h-32 w-full rounded-md object-cover sm:h-28 sm:w-28"
+                    />
+                    <div className="min-w-0">
+                      <p className="text-sm text-neutral-500">{drawing.child_name || "Оролцогч"}</p>
+                      <h2 className="mt-1 text-xl font-semibold leading-snug text-neutral-950">{drawing.title}</h2>
+                      <p className="mt-2 text-sm text-neutral-500">Насны ангилал {drawing.age_category}</p>
+                    </div>
+                    <div className="flex items-center gap-2 sm:flex-col sm:items-end">
+                      <p className="rounded-full bg-neutral-950 px-4 py-2 text-sm font-semibold text-white">
+                        {drawing.vote_count} санал
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditingId(editingId === drawing.id ? null : drawing.id)}
+                          className="rounded-full border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-700 transition hover:border-neutral-950"
+                        >
+                          Засах
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(drawing.id, drawing.title)}
+                          disabled={isPending}
+                          className="rounded-full border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 transition hover:border-red-400 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Устгах
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {editingId === drawing.id ? (
+                    <form className="mt-5 grid gap-4 border-t border-neutral-200 pt-5 md:grid-cols-2" onSubmit={handleUpdate}>
+                      <input type="hidden" name="id" value={drawing.id} />
+                      <label className="block">
+                        <span className="text-sm font-medium text-neutral-700">Зургийн нэр</span>
+                        <input
+                          name="title"
+                          defaultValue={drawing.title}
+                          className="mt-2 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none focus:border-neutral-950 focus:bg-white"
+                          required
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="text-sm font-medium text-neutral-700">Хүүхдийн нэр эсвэл код</span>
+                        <input
+                          name="childName"
+                          defaultValue={drawing.child_name || ""}
+                          className="mt-2 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none focus:border-neutral-950 focus:bg-white"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="text-sm font-medium text-neutral-700">Насны ангилал</span>
+                        <select
+                          name="ageCategory"
+                          defaultValue={drawing.age_category}
+                          className="mt-2 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none focus:border-neutral-950 focus:bg-white"
+                        >
+                          {AGE_CATEGORIES.map((category) => (
+                            <option key={category} value={category}>
+                              {category}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="block">
+                        <span className="text-sm font-medium text-neutral-700">Шинэ зураг</span>
+                        <input
+                          name="image"
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp,image/gif"
+                          className="mt-2 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm outline-none file:mr-3 file:rounded-full file:border-0 file:bg-neutral-950 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white focus:border-neutral-950 focus:bg-white"
+                        />
+                      </label>
+                      <div className="flex gap-3 md:col-span-2">
+                        <button
+                          type="submit"
+                          disabled={isPending}
+                          className="rounded-full bg-neutral-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:bg-neutral-400"
+                        >
+                          Хадгалах
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingId(null)}
+                          className="rounded-full border border-neutral-300 px-5 py-3 text-sm font-semibold text-neutral-700 transition hover:border-neutral-950"
+                        >
+                          Болих
+                        </button>
+                      </div>
+                    </form>
+                  ) : null}
+                </article>
+              ))}
+
+              {filteredDrawings.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-neutral-300 bg-white/70 px-6 py-12 text-center text-neutral-500">
+                  Энэ шүүлтүүрт тохирох зураг алга.
+                </div>
+              ) : null}
+            </div>
+          </section>
+        </section>
+      </section>
+    </main>
+  );
+}
