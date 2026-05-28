@@ -4,8 +4,8 @@
 
 :root {
   color-scheme: light;
-  background: #f7f7f5;
-  color: #171717;
+  background: #fafafa;
+  color: #121212;
   --font-sans: Arial, Helvetica, sans-serif;
 }
 
@@ -20,12 +20,10 @@ html {
 body {
   min-height: 100vh;
   margin: 0;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0)) 0 0 / 100% 380px
-      no-repeat,
-    #f7f7f5;
-  color: #171717;
+  background: #fafafa;
+  color: #121212;
   font-family: var(--font-sans);
+  text-rendering: geometricPrecision;
 }
 
 button,
@@ -39,12 +37,18 @@ button {
   touch-action: manipulation;
 }
 
+input,
+select,
+textarea {
+  color: #121212;
+}
+
 img {
   max-width: 100%;
 }
 
 ::selection {
-  background: #171717;
+  background: #121212;
   color: white;
 }
 

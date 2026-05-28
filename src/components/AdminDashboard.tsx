@@ -162,37 +162,39 @@ export function AdminDashboard({ drawings }: AdminDashboardProps) {
   }
 
   return (
-    <main className="min-h-screen px-4 py-6 sm:px-6 lg:px-10">
-      <section className="mx-auto max-w-7xl">
-        <header className="flex flex-col gap-5 border-b border-neutral-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
+    <main className="min-h-screen px-4 py-5 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-[1500px]">
+        <header className="grid gap-6 border-b border-neutral-200 pb-8 pt-2 sm:grid-cols-[1fr_auto] sm:items-end">
           <div>
-            <p className="mb-3 text-xs font-medium uppercase tracking-[0.16em] text-neutral-500">
+            <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.28em] text-neutral-400">
               Админ хэсэг
             </p>
-            <h1 className="text-3xl font-semibold text-neutral-950 sm:text-5xl">Саналын удирдлага</h1>
+            <h1 className="text-4xl font-semibold leading-none text-neutral-950 sm:text-6xl">
+              Саналын удирдлага
+            </h1>
           </div>
           <form action={logoutAdmin}>
             <button
               type="submit"
-              className="rounded-full border border-neutral-300 px-5 py-2 text-sm font-semibold text-neutral-700 transition hover:border-neutral-950 hover:text-neutral-950"
+              className="rounded-full border border-neutral-200 bg-white px-5 py-2.5 text-sm font-semibold text-neutral-600 transition hover:border-neutral-950 hover:text-neutral-950"
             >
               Гарах
             </button>
           </form>
         </header>
 
-        <div className="mt-6 grid gap-4 sm:grid-cols-3">
-          <div className="rounded-lg border border-neutral-200 bg-white p-5">
-            <p className="text-sm text-neutral-500">Нийт бүтээл</p>
-            <p className="mt-2 text-3xl font-semibold text-neutral-950">{drawings.length}</p>
+        <div className="mt-6 grid gap-px overflow-hidden rounded-lg border border-neutral-200 bg-neutral-200 sm:grid-cols-3">
+          <div className="bg-white p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-400">Нийт бүтээл</p>
+            <p className="mt-3 text-4xl font-medium text-neutral-950">{drawings.length}</p>
           </div>
-          <div className="rounded-lg border border-neutral-200 bg-white p-5">
-            <p className="text-sm text-neutral-500">Нийт санал</p>
-            <p className="mt-2 text-3xl font-semibold text-neutral-950">{totalVotes}</p>
+          <div className="bg-white p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-400">Нийт санал</p>
+            <p className="mt-3 text-4xl font-medium text-neutral-950">{totalVotes}</p>
           </div>
-          <div className="rounded-lg border border-neutral-200 bg-white p-5">
-            <p className="text-sm text-neutral-500">Ангилал</p>
-            <p className="mt-2 text-3xl font-semibold text-neutral-950">{AGE_CATEGORIES.length}</p>
+          <div className="bg-white p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-400">Ангилал</p>
+            <p className="mt-3 text-4xl font-medium text-neutral-950">{AGE_CATEGORIES.length}</p>
           </div>
         </div>
 
@@ -201,7 +203,7 @@ export function AdminDashboard({ drawings }: AdminDashboardProps) {
             className={clsx(
               "mt-5 rounded-lg px-4 py-3 text-sm font-medium",
               notice.status === "success"
-                ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100"
+                ? "bg-neutral-950 text-white"
                 : "bg-red-50 text-red-700 ring-1 ring-red-100"
             )}
           >
@@ -209,30 +211,30 @@ export function AdminDashboard({ drawings }: AdminDashboardProps) {
           </p>
         ) : null}
 
-        <section className="mt-8 grid gap-8 lg:grid-cols-[380px_1fr]">
+        <section className="mt-8 grid gap-8 lg:grid-cols-[360px_1fr]">
           <aside className="h-fit rounded-lg border border-neutral-200 bg-white p-5">
-            <h2 className="text-xl font-semibold text-neutral-950">Шинэ зураг нэмэх</h2>
+            <h2 className="text-xl font-medium text-neutral-950">Шинэ зураг нэмэх</h2>
             <form className="mt-5 space-y-4" onSubmit={handleUpload}>
               <label className="block">
-                <span className="text-sm font-medium text-neutral-700">Зургийн нэр</span>
+                <span className="text-sm font-medium text-neutral-600">Зургийн нэр</span>
                 <input
                   name="title"
-                  className="mt-2 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-neutral-950 focus:bg-white"
+                  className="mt-2 w-full rounded-lg border border-neutral-200 bg-white px-4 py-3 outline-none transition focus:border-neutral-950"
                   required
                 />
               </label>
               <label className="block">
-                <span className="text-sm font-medium text-neutral-700">Хүүхдийн нэр эсвэл код</span>
+                <span className="text-sm font-medium text-neutral-600">Хүүхдийн нэр эсвэл код</span>
                 <input
                   name="childName"
-                  className="mt-2 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-neutral-950 focus:bg-white"
+                  className="mt-2 w-full rounded-lg border border-neutral-200 bg-white px-4 py-3 outline-none transition focus:border-neutral-950"
                 />
               </label>
               <label className="block">
-                <span className="text-sm font-medium text-neutral-700">Насны ангилал</span>
+                <span className="text-sm font-medium text-neutral-600">Насны ангилал</span>
                 <select
                   name="ageCategory"
-                  className="mt-2 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-neutral-950 focus:bg-white"
+                  className="mt-2 w-full rounded-lg border border-neutral-200 bg-white px-4 py-3 outline-none transition focus:border-neutral-950"
                   required
                 >
                   {AGE_CATEGORIES.map((category) => (
@@ -243,19 +245,19 @@ export function AdminDashboard({ drawings }: AdminDashboardProps) {
                 </select>
               </label>
               <label className="block">
-                <span className="text-sm font-medium text-neutral-700">Зураг</span>
+                <span className="text-sm font-medium text-neutral-600">Зураг</span>
                 <input
                   name="image"
                   type="file"
                   accept="image/png,image/jpeg,image/webp,image/gif"
-                  className="mt-2 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm outline-none transition file:mr-3 file:rounded-full file:border-0 file:bg-neutral-950 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white focus:border-neutral-950 focus:bg-white"
+                  className="mt-2 w-full rounded-lg border border-neutral-200 bg-white px-4 py-3 text-sm outline-none transition file:mr-3 file:rounded-full file:border-0 file:bg-neutral-950 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white focus:border-neutral-950"
                   required
                 />
               </label>
               <button
                 type="submit"
                 disabled={isPending}
-                className="w-full rounded-full bg-neutral-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:bg-neutral-400"
+                className="w-full rounded-full border border-neutral-950 bg-neutral-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white hover:text-neutral-950 disabled:cursor-not-allowed disabled:border-neutral-300 disabled:bg-neutral-300 disabled:text-white"
               >
                 {isPending ? "Түр хүлээнэ үү" : "Нэмэх"}
               </button>
@@ -265,12 +267,12 @@ export function AdminDashboard({ drawings }: AdminDashboardProps) {
           <section>
             <div className="mb-4 flex flex-col gap-3 rounded-lg border border-neutral-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-col gap-3 sm:flex-row">
-                <label className="text-sm font-medium text-neutral-700">
+                <label className="text-sm font-medium text-neutral-600">
                   Насны ангилал
                   <select
                     value={filter}
                     onChange={(event) => setFilter(event.target.value as AgeCategory | "all")}
-                    className="mt-2 block w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 outline-none focus:border-neutral-950 sm:w-36"
+                    className="mt-2 block w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 outline-none focus:border-neutral-950 sm:w-36"
                   >
                     <option value="all">Бүгд</option>
                     {AGE_CATEGORIES.map((category) => (
@@ -280,12 +282,12 @@ export function AdminDashboard({ drawings }: AdminDashboardProps) {
                     ))}
                   </select>
                 </label>
-                <label className="text-sm font-medium text-neutral-700">
+                <label className="text-sm font-medium text-neutral-600">
                   Эрэмбэлэх
                   <select
                     value={sort}
                     onChange={(event) => setSort(event.target.value as SortKey)}
-                    className="mt-2 block w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 outline-none focus:border-neutral-950 sm:w-40"
+                    className="mt-2 block w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 outline-none focus:border-neutral-950 sm:w-40"
                   >
                     <option value="votes">Санал</option>
                     <option value="created">Огноо</option>
@@ -296,7 +298,7 @@ export function AdminDashboard({ drawings }: AdminDashboardProps) {
               <button
                 type="button"
                 onClick={exportCsv}
-                className="rounded-full border border-neutral-300 px-5 py-3 text-sm font-semibold text-neutral-800 transition hover:border-neutral-950"
+                className="rounded-full border border-neutral-200 bg-white px-5 py-3 text-sm font-semibold text-neutral-700 transition hover:border-neutral-950 hover:text-neutral-950"
               >
                 Үр дүн татах
               </button>
@@ -304,27 +306,27 @@ export function AdminDashboard({ drawings }: AdminDashboardProps) {
 
             <div className="space-y-4">
               {filteredDrawings.map((drawing) => (
-                <article key={drawing.id} className="rounded-lg border border-neutral-200 bg-white p-4">
+                <article key={drawing.id} className="rounded-lg border border-neutral-200 bg-white p-4 transition hover:border-neutral-300">
                   <div className="grid gap-4 sm:grid-cols-[112px_1fr_auto] sm:items-center">
                     <img
                       src={drawing.image_url}
                       alt={drawing.title}
-                      className="h-32 w-full rounded-md object-cover sm:h-28 sm:w-28"
+                      className="h-32 w-full rounded-lg object-cover sm:h-28 sm:w-28"
                     />
                     <div className="min-w-0">
                       <p className="text-sm text-neutral-500">{drawing.child_name || "Оролцогч"}</p>
-                      <h2 className="mt-1 text-xl font-semibold leading-snug text-neutral-950">{drawing.title}</h2>
+                      <h2 className="mt-1 text-xl font-medium leading-snug text-neutral-950">{drawing.title}</h2>
                       <p className="mt-2 text-sm text-neutral-500">Насны ангилал {drawing.age_category}</p>
                     </div>
                     <div className="flex items-center gap-2 sm:flex-col sm:items-end">
-                      <p className="rounded-full bg-neutral-950 px-4 py-2 text-sm font-semibold text-white">
+                      <p className="rounded-full border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm font-semibold text-neutral-950">
                         {drawing.vote_count} санал
                       </p>
                       <div className="flex gap-2">
                         <button
                           type="button"
                           onClick={() => setEditingId(editingId === drawing.id ? null : drawing.id)}
-                          className="rounded-full border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-700 transition hover:border-neutral-950"
+                          className="rounded-full border border-neutral-200 px-4 py-2 text-sm font-semibold text-neutral-700 transition hover:border-neutral-950"
                         >
                           Засах
                         </button>
@@ -332,7 +334,7 @@ export function AdminDashboard({ drawings }: AdminDashboardProps) {
                           type="button"
                           onClick={() => handleDelete(drawing.id, drawing.title)}
                           disabled={isPending}
-                          className="rounded-full border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 transition hover:border-red-400 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="rounded-full border border-red-100 px-4 py-2 text-sm font-semibold text-red-700 transition hover:border-red-300 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           Устгах
                         </button>
@@ -344,28 +346,28 @@ export function AdminDashboard({ drawings }: AdminDashboardProps) {
                     <form className="mt-5 grid gap-4 border-t border-neutral-200 pt-5 md:grid-cols-2" onSubmit={handleUpdate}>
                       <input type="hidden" name="id" value={drawing.id} />
                       <label className="block">
-                        <span className="text-sm font-medium text-neutral-700">Зургийн нэр</span>
+                        <span className="text-sm font-medium text-neutral-600">Зургийн нэр</span>
                         <input
                           name="title"
                           defaultValue={drawing.title}
-                          className="mt-2 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none focus:border-neutral-950 focus:bg-white"
+                          className="mt-2 w-full rounded-lg border border-neutral-200 bg-white px-4 py-3 outline-none focus:border-neutral-950"
                           required
                         />
                       </label>
                       <label className="block">
-                        <span className="text-sm font-medium text-neutral-700">Хүүхдийн нэр эсвэл код</span>
+                        <span className="text-sm font-medium text-neutral-600">Хүүхдийн нэр эсвэл код</span>
                         <input
                           name="childName"
                           defaultValue={drawing.child_name || ""}
-                          className="mt-2 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none focus:border-neutral-950 focus:bg-white"
+                          className="mt-2 w-full rounded-lg border border-neutral-200 bg-white px-4 py-3 outline-none focus:border-neutral-950"
                         />
                       </label>
                       <label className="block">
-                        <span className="text-sm font-medium text-neutral-700">Насны ангилал</span>
+                        <span className="text-sm font-medium text-neutral-600">Насны ангилал</span>
                         <select
                           name="ageCategory"
                           defaultValue={drawing.age_category}
-                          className="mt-2 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none focus:border-neutral-950 focus:bg-white"
+                          className="mt-2 w-full rounded-lg border border-neutral-200 bg-white px-4 py-3 outline-none focus:border-neutral-950"
                         >
                           {AGE_CATEGORIES.map((category) => (
                             <option key={category} value={category}>
@@ -375,26 +377,26 @@ export function AdminDashboard({ drawings }: AdminDashboardProps) {
                         </select>
                       </label>
                       <label className="block">
-                        <span className="text-sm font-medium text-neutral-700">Шинэ зураг</span>
+                        <span className="text-sm font-medium text-neutral-600">Шинэ зураг</span>
                         <input
                           name="image"
                           type="file"
                           accept="image/png,image/jpeg,image/webp,image/gif"
-                          className="mt-2 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm outline-none file:mr-3 file:rounded-full file:border-0 file:bg-neutral-950 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white focus:border-neutral-950 focus:bg-white"
+                          className="mt-2 w-full rounded-lg border border-neutral-200 bg-white px-4 py-3 text-sm outline-none file:mr-3 file:rounded-full file:border-0 file:bg-neutral-950 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white focus:border-neutral-950"
                         />
                       </label>
                       <div className="flex gap-3 md:col-span-2">
                         <button
                           type="submit"
                           disabled={isPending}
-                          className="rounded-full bg-neutral-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:bg-neutral-400"
+                          className="rounded-full border border-neutral-950 bg-neutral-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white hover:text-neutral-950 disabled:cursor-not-allowed disabled:border-neutral-300 disabled:bg-neutral-300 disabled:text-white"
                         >
                           Хадгалах
                         </button>
                         <button
                           type="button"
                           onClick={() => setEditingId(null)}
-                          className="rounded-full border border-neutral-300 px-5 py-3 text-sm font-semibold text-neutral-700 transition hover:border-neutral-950"
+                          className="rounded-full border border-neutral-200 px-5 py-3 text-sm font-semibold text-neutral-700 transition hover:border-neutral-950"
                         >
                           Болих
                         </button>
@@ -405,7 +407,7 @@ export function AdminDashboard({ drawings }: AdminDashboardProps) {
               ))}
 
               {filteredDrawings.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-neutral-300 bg-white/70 px-6 py-12 text-center text-neutral-500">
+                <div className="rounded-lg border border-dashed border-neutral-300 bg-white px-6 py-12 text-center text-neutral-500">
                   Энэ шүүлтүүрт тохирох зураг алга.
                 </div>
               ) : null}
