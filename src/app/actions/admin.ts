@@ -4,7 +4,12 @@ import { randomUUID } from "crypto";
 import { revalidatePath, unstable_noStore as noStore } from "next/cache";
 import { redirect } from "next/navigation";
 import { clearAdminSession, createAdminSession, isAdminConfigured, requireAdmin } from "@/lib/admin-auth";
-import { createServiceSupabaseClient, DRAWING_BUCKET, hasServerSupabaseEnv } from "@/lib/supabase";
+import {
+  createServiceSupabaseClient,
+  DRAWING_BUCKET,
+  getServerSupabaseEnvError,
+  hasServerSupabaseEnv
+} from "@/lib/supabase";
 import { isAgeCategory, isUuid, readText } from "@/lib/validators";
 import type {
   ActionState,
@@ -179,7 +184,7 @@ export async function prepareDrawingUpload(input: DrawingUploadInput): Promise<P
   await requireAdmin();
 
   if (!hasServerSupabaseEnv()) {
-    return fail("Supabase service тохиргоо дутуу байна.");
+    return fail(getServerSupabaseEnvError() || "Supabase service тохиргоо дутуу байна.");
   }
 
   const fields = validateDrawingInput(input);
@@ -217,7 +222,7 @@ export async function finalizeDrawingUpload(input: FinalizeDrawingUploadInput): 
   await requireAdmin();
 
   if (!hasServerSupabaseEnv()) {
-    return fail("Supabase service тохиргоо дутуу байна.");
+    return fail(getServerSupabaseEnvError() || "Supabase service тохиргоо дутуу байна.");
   }
 
   const fields = validateDrawingInput(input);
@@ -311,7 +316,7 @@ export async function uploadDrawing(formData: FormData): Promise<ActionState> {
   await requireAdmin();
 
   if (!hasServerSupabaseEnv()) {
-    return fail("Supabase service тохиргоо дутуу байна.");
+    return fail(getServerSupabaseEnvError() || "Supabase service тохиргоо дутуу байна.");
   }
 
   const fields = validateDrawingFields(formData);
@@ -363,7 +368,7 @@ export async function updateDrawing(formData: FormData): Promise<ActionState> {
   await requireAdmin();
 
   if (!hasServerSupabaseEnv()) {
-    return fail("Supabase service тохиргоо дутуу байна.");
+    return fail(getServerSupabaseEnvError() || "Supabase service тохиргоо дутуу байна.");
   }
 
   const id = readText(formData, "id", 64);
@@ -441,7 +446,7 @@ export async function deleteDrawing(formData: FormData): Promise<ActionState> {
   await requireAdmin();
 
   if (!hasServerSupabaseEnv()) {
-    return fail("Supabase service тохиргоо дутуу байна.");
+    return fail(getServerSupabaseEnvError() || "Supabase service тохиргоо дутуу байна.");
   }
 
   const id = readText(formData, "id", 64);
