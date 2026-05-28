@@ -30,3 +30,27 @@ export type ActionState = {
   status: "idle" | "success" | "error";
   message: string;
 };
+
+export type DrawingUploadInput = {
+  title: string;
+  childName?: string;
+  ageCategory: string;
+  fileName: string;
+  contentType: string;
+  size: number;
+};
+
+export type PreparedDrawingUpload = ActionState & {
+  upload?: {
+    path: string;
+    token: string;
+    cacheControl: string;
+  };
+};
+
+export type FinalizeDrawingUploadInput = {
+  title: string;
+  childName?: string;
+  ageCategory: string;
+  filePath: string;
+};

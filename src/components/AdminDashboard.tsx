@@ -3,7 +3,8 @@
 import { FormEvent, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
-import { deleteDrawing, logoutAdmin, updateDrawing, uploadDrawing } from "@/app/actions/admin";
+import { deleteDrawing, finalizeDrawingUpload, logoutAdmin, prepareDrawingUpload, updateDrawing } from "@/app/actions/admin";
+import { createBrowserSupabaseClient } from "@/lib/supabase-browser";
 import { AGE_CATEGORIES, type ActionState, type AdminDrawingResult, type AgeCategory } from "@/types";
 
 type SortKey = "created" | "votes" | "title";
@@ -61,7 +62,68 @@ export function AdminDashboard({ drawings }: AdminDashboardProps) {
     event.preventDefault();
     const form = event.currentTarget;
     const formData = new FormData(form);
-    runAction(uploadDrawing, formData, () => form.reset());
+    const image = formData.get("image");
+
+    if (!(image instanceof File) || image.size === 0) {
+      setNotice({ status: "error", message: "Зургийн файл сонгоно уу." });
+      return;
+    }
+
+    const uploadInput = {
+      title: String(formData.get("title") || ""),
+      childName: String(formData.get("childName") || ""),
+      ageCategory: String(formData.get("ageCategory") || ""),
+      fileName: image.name,
+      contentType: image.type,
+      size: image.size
+    };
+
+    setNotice(idleState);
+    startTransition(async () => {
+      try {
+        const prepared = await prepareDrawingUpload(uploadInput);
+
+        if (prepared.status !== "success" || !prepared.upload) {
+          setNotice(prepared);
+          return;
+        }
+
+        const supabase = createBrowserSupabaseClient();
+        const { error: uploadError } = await supabase.storage
+          .from("drawing-images")
+          .uploadToSignedUrl(prepared.upload.path, prepared.upload.token, image, {
+            contentType: image.type,
+            cacheControl: prepared.upload.cacheControl
+          });
+
+        if (uploadError) {
+          setNotice({
+            status: "error",
+            message: `Зураг storage руу оруулахад алдаа гарлаа: ${uploadError.message}`
+          });
+          return;
+        }
+
+        const result = await finalizeDrawingUpload({
+          title: uploadInput.title,
+          childName: uploadInput.childName,
+          ageCategory: uploadInput.ageCategory,
+          filePath: prepared.upload.path
+        });
+
+        setNotice(result);
+
+        if (result.status === "success") {
+          form.reset();
+          router.refresh();
+        }
+      } catch (error) {
+        setNotice({
+          status: "error",
+          message: error instanceof Error ? error.message : "Зураг нэмэхэд алдаа гарлаа."
+        });
+      }
+    });
   }
 
   function handleUpdate(event: FormEvent<HTMLFormElement>) {
