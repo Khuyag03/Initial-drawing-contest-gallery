@@ -294,12 +294,13 @@ export function Gallery({ drawings, employee }: GalleryProps) {
       ) : null}
 
       <section className="grid gap-7 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-        {groupedDrawings.map((drawing) => {
+        {groupedDrawings.map((drawing, index) => {
           const liked = hasLiked(drawing.id);
           return (
           <article
             key={drawing.id}
-            className="group"
+            className="home-card-reveal group"
+            style={{ animationDelay: `${Math.min(index, 8) * 55}ms` }}
           >
             <button
               type="button"

@@ -26,7 +26,7 @@ export default async function HomePage() {
           aria-hidden="true"
         />
         <div className="absolute inset-0 bg-white/68" />
-        <header className="relative z-10 flex items-center justify-between px-5 py-5 sm:px-8 lg:px-12">
+        <header className="home-reveal relative z-10 flex items-center justify-between px-5 py-5 sm:px-8 lg:px-12">
           <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-neutral-500">
             Хүүхдийн баярын гар зургийн санал хураалт
           </p>
@@ -40,16 +40,10 @@ export default async function HomePage() {
 
         <div className="relative z-10 flex min-h-[calc(72svh-84px)] items-end px-5 pb-8 sm:px-8 sm:pb-10 lg:px-12 lg:pb-14">
           <div className="max-w-5xl">
-            <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.28em] text-neutral-500">
-              Children&apos;s Day Drawing Contest
-            </p>
-            <h1 className="text-4xl font-semibold leading-[0.96] text-neutral-950 sm:text-6xl lg:text-7xl">
+            <h1 className="home-reveal text-4xl font-semibold leading-[0.96] text-neutral-950 [animation-delay:80ms] sm:text-6xl lg:text-7xl">
               “МИНИЙ ЕРТӨНЦ” хүүхдийн гар зургийн уралдаан
             </h1>
-            <p className="mt-6 max-w-3xl text-base leading-7 text-neutral-700 sm:text-lg sm:leading-8">
-              Таалагдсан зургууддаа like дарж дэмжээрэй.
-            </p>
-            <div className="mt-8 grid max-w-4xl gap-3 border-t border-neutral-950/15 pt-5 sm:grid-cols-[120px_1fr]">
+            <div className="home-reveal mt-8 grid max-w-4xl gap-3 border-t border-neutral-950/15 pt-5 [animation-delay:220ms] sm:grid-cols-[120px_1fr]">
               <p className="text-sm font-semibold text-neutral-950">Зорилго</p>
               <p className="text-base leading-7 text-neutral-700 sm:text-lg sm:leading-8">
                 Хүүхдийн бүтээлч сэтгэлгээг дэмжих, өөрийн ертөнцийг зургаар дамжуулан
@@ -61,16 +55,13 @@ export default async function HomePage() {
       </section>
 
       <section className="mx-auto flex max-w-[1500px] flex-col gap-8 px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-        <header className="flex flex-col gap-3 border-b border-neutral-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
+        <header className="home-reveal flex flex-col gap-3 border-b border-neutral-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-neutral-400">
               Gallery
             </p>
             <h2 className="text-2xl font-medium text-neutral-950 sm:text-3xl">Бүтээлүүд</h2>
           </div>
-          <p className="max-w-md text-sm leading-6 text-neutral-500">
-            Like-ийн тоо бүтээл бүр дээр харагдах бөгөөд нэг SAP код нэг зураг дээр нэг удаа like дарна.
-          </p>
         </header>
       </section>
 
