@@ -150,6 +150,19 @@ export async function submitVote(
 
   if (error) {
     if (error.code === "23505") {
+      const { data: activeLike } = await supabase
+        .from("votes")
+        .select("id")
+        .eq("employee_id", employee.id)
+        .eq("drawing_id", drawing.id)
+        .is("deleted_at", null)
+        .maybeSingle();
+
+      if (!activeLike) {
+        console.error("Like insert blocked by stale unique constraint", error);
+        return voteError("Like хадгалахад Supabase schema шинэчлэлт хэрэгтэй байна. supabase/schema.sql файлыг дахин ажиллуулна уу.");
+      }
+
       return {
         status: "already_liked",
         message: ALREADY_LIKED_MESSAGE,

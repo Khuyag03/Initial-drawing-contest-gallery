@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
+import Image from "next/image";
 import clsx from "clsx";
 import { submitVote } from "@/app/actions/votes";
 import { getVoteIdentity } from "@/lib/client-device";
@@ -8,11 +9,58 @@ import { AGE_CATEGORIES, type AgeCategory, type Drawing, type EmployeeAccess, ty
 
 const SUCCESS_MESSAGE = "Таны like бүртгэгдлээ.";
 const ALREADY_LIKED_MESSAGE = "Та энэ зурагт аль хэдийн like дарсан байна.";
+const IMAGE_BLUR_DATA_URL =
+  "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAxNiAyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwIiB4Mj0iMSIgeTE9IjAiIHkyPSIxIj48c3RvcCBzdG9wLWNvbG9yPSIjZjVmNWY0Ii8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjZTdlNWUyIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3QgZmlsbD0idXJsKCNnKSIgd2lkdGg9IjE2IiBoZWlnaHQ9IjIwIi8+PC9zdmc+";
 
 type GalleryProps = {
   drawings: Drawing[];
   employee: EmployeeAccess;
 };
+
+type DrawingImageProps = {
+  drawing: Drawing;
+  variant: "thumbnail" | "lightbox";
+};
+
+function DrawingImage({ drawing, variant }: DrawingImageProps) {
+  const [loaded, setLoaded] = useState(false);
+  const isLightbox = variant === "lightbox";
+
+  return (
+    <div
+      className={clsx(
+        "relative overflow-hidden bg-neutral-100",
+        isLightbox
+          ? "h-[74vh] w-full rounded-md"
+          : "aspect-[4/5] w-full rounded-lg"
+      )}
+    >
+      {!loaded ? (
+        <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-neutral-100 via-neutral-200 to-neutral-100" />
+      ) : null}
+      <Image
+        src={drawing.image_url}
+        alt={drawing.title}
+        fill
+        sizes={
+          isLightbox
+            ? "100vw"
+            : "(min-width: 1280px) 13vw, (min-width: 640px) 20vw, 40vw"
+        }
+        quality={isLightbox ? 90 : 68}
+        placeholder="blur"
+        blurDataURL={IMAGE_BLUR_DATA_URL}
+        loading="lazy"
+        onLoad={() => setLoaded(true)}
+        className={clsx(
+          "object-contain transition duration-700",
+          loaded ? "opacity-100" : "opacity-0",
+          !isLightbox && "group-hover:scale-[1.018]"
+        )}
+      />
+    </div>
+  );
+}
 
 export function Gallery({ drawings, employee }: GalleryProps) {
   const [voteCountOverrides, setVoteCountOverrides] = useState<Record<string, number>>({});
@@ -68,9 +116,10 @@ export function Gallery({ drawings, employee }: GalleryProps) {
   function updateVoteCount(drawingId: string, voteCount?: number) {
     setVoteCountOverrides((current) => {
       const drawing = groupedDrawings.find((item) => item.id === drawingId);
+      const optimisticCount = (drawing?.vote_count ?? 0) + 1;
       return {
         ...current,
-        [drawingId]: voteCount ?? (drawing?.vote_count ?? 0) + 1
+        [drawingId]: Math.max(voteCount ?? optimisticCount, optimisticCount)
       };
     });
   }
@@ -183,12 +232,7 @@ export function Gallery({ drawings, employee }: GalleryProps) {
               className="block w-full overflow-hidden rounded-lg bg-neutral-100 text-left ring-1 ring-neutral-200/80 transition duration-500 group-hover:-translate-y-1 group-hover:ring-neutral-300"
               aria-label={`${drawing.title} томоор харах`}
             >
-              <img
-                src={drawing.image_url}
-                alt={drawing.title}
-                className="h-auto w-full object-cover transition duration-700 group-hover:scale-[1.018]"
-                loading="lazy"
-              />
+              <DrawingImage drawing={drawing} variant="thumbnail" />
             </button>
 
             <div className="flex items-start justify-between gap-4 px-1 pt-4">
@@ -259,11 +303,7 @@ export function Gallery({ drawings, employee }: GalleryProps) {
             </div>
 
             <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-white/[0.03]">
-              <img
-                src={selectedDrawing.image_url}
-                alt={selectedDrawing.title}
-                className="max-h-[74vh] w-auto rounded-md object-contain"
-              />
+              <DrawingImage drawing={selectedDrawing} variant="lightbox" />
             </div>
 
             <div className="flex flex-col gap-3 rounded-lg border border-white/10 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
