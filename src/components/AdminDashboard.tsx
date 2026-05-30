@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { deleteDrawing, finalizeDrawingUpload, logoutAdmin, prepareDrawingUpload, updateDrawing } from "@/app/actions/admin";
 import { createBrowserSupabaseClient } from "@/lib/supabase-browser";
+import { compressImage } from "@/lib/compress-image";
 import { AGE_CATEGORIES, type ActionState, type AdminDrawingResult, type AgeCategory } from "@/types";
 
 type SortKey = "created" | "votes" | "title";
@@ -27,6 +28,8 @@ export function AdminDashboard({ drawings }: AdminDashboardProps) {
   const [sort, setSort] = useState<SortKey>("votes");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<ActionState>(idleState);
+  const [uploadState, setUploadState] = useState<"idle" | "compressing" | "uploading">("idle");
+  const [compressionInfo, setCompressionInfo] = useState<{ originalSize: number; compressedSize: number } | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const filteredDrawings = useMemo(() => {
@@ -76,37 +79,43 @@ export function AdminDashboard({ drawings }: AdminDashboardProps) {
       return;
     }
 
-    const uploadInput = {
-      title: String(formData.get("title") || ""),
-      childName: String(formData.get("childName") || ""),
-      ageCategory: String(formData.get("ageCategory") || ""),
-      fileName: image.name,
-      contentType: image.type,
-      size: image.size
-    };
-
     setNotice(idleState);
     startTransition(async () => {
       try {
-        const prepared = await prepareDrawingUpload(uploadInput);
+        setUploadState("compressing");
+        const compressedImage = await compressImage(image);
+        setCompressionInfo({ originalSize: image.size, compressedSize: compressedImage.size });
 
+        const uploadInput = {
+          title: String(formData.get("title") || ""),
+          childName: String(formData.get("childName") || ""),
+          ageCategory: String(formData.get("ageCategory") || ""),
+          fileName: compressedImage.name,
+          contentType: compressedImage.type,
+          size: compressedImage.size
+        };
+
+        const prepared = await prepareDrawingUpload(uploadInput);
         if (prepared.status !== "success" || !prepared.upload) {
+          setUploadState("idle");
           setNotice(prepared);
           return;
         }
 
+        setUploadState("uploading");
         const supabase = createBrowserSupabaseClient();
         const { error: uploadError } = await supabase.storage
           .from("drawing-images")
-          .uploadToSignedUrl(prepared.upload.path, prepared.upload.token, image, {
-            contentType: image.type,
+          .uploadToSignedUrl(prepared.upload.path, prepared.upload.token, compressedImage, {
+            contentType: compressedImage.type,
             cacheControl: prepared.upload.cacheControl
           });
 
         if (uploadError) {
+          setUploadState("idle");
           setNotice({
             status: "error",
-            message: `Зураг storage руу оруулахад алдаа гарлаа: ${uploadError.message}`
+            message: `Зураг шахах эсвэл upload хийхэд алдаа гарлаа.`
           });
           return;
         }
@@ -118,16 +127,19 @@ export function AdminDashboard({ drawings }: AdminDashboardProps) {
           filePath: prepared.upload.path
         });
 
+        setUploadState("idle");
         setNotice(result);
 
         if (result.status === "success") {
           form.reset();
+          setCompressionInfo(null);
           router.refresh();
         }
       } catch (error) {
+        setUploadState("idle");
         setNotice({
           status: "error",
-          message: error instanceof Error ? error.message : "Зураг нэмэхэд алдаа гарлаа."
+          message: error instanceof Error ? error.message : "Зураг шахах эсвэл upload хийхэд алдаа гарлаа."
         });
       }
     });
@@ -282,11 +294,25 @@ export function AdminDashboard({ drawings }: AdminDashboardProps) {
               </label>
               <button
                 type="submit"
-                disabled={isPending}
+                disabled={isPending || uploadState !== "idle"}
                 className="w-full rounded-full border border-neutral-950 bg-neutral-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white hover:text-neutral-950 disabled:cursor-not-allowed disabled:border-neutral-300 disabled:bg-neutral-300 disabled:text-white"
               >
-                {isPending ? "Түр хүлээнэ үү" : "Нэмэх"}
+                {uploadState === "compressing"
+                  ? "Зургийг шахаж байна..."
+                  : uploadState === "uploading"
+                  ? "Зургийг байршуулж байна..."
+                  : "Нэмэх"}
               </button>
+              {uploadState !== "idle" ? (
+                <p className="mt-2 text-sm text-neutral-600">
+                  {uploadState === "compressing" ? "Зургийг шахаж байна..." : "Зургийг байршуулж байна..."}
+                </p>
+              ) : null}
+              {compressionInfo ? (
+                <p className="mt-2 text-sm text-neutral-600">
+                  Эхний хэмжээ: {(compressionInfo.originalSize / 1024).toFixed(1)}KB · Шахсан хэмжээ: {(compressionInfo.compressedSize / 1024).toFixed(1)}KB
+                </p>
+              ) : null}
             </form>
           </aside>
 
