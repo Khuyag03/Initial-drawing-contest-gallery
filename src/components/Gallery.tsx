@@ -6,8 +6,8 @@ import { submitVote } from "@/app/actions/votes";
 import { getVoteIdentity } from "@/lib/client-device";
 import { AGE_CATEGORIES, type AgeCategory, type Drawing, type EmployeeAccess, type VoteResult } from "@/types";
 
-const SUCCESS_MESSAGE = "Таны санал амжилттай бүртгэгдлээ.";
-const ALREADY_VOTED_CATEGORY_MESSAGE = "Та энэ насны ангилалд аль хэдийн санал өгсөн байна.";
+const SUCCESS_MESSAGE = "Таны like бүртгэгдлээ.";
+const ALREADY_LIKED_MESSAGE = "Та энэ зурагт аль хэдийн like дарсан байна.";
 
 type GalleryProps = {
   drawings: Drawing[];
@@ -18,7 +18,7 @@ export function Gallery({ drawings, employee }: GalleryProps) {
   const [voteCountOverrides, setVoteCountOverrides] = useState<Record<string, number>>({});
   const [selected, setSelected] = useState<Drawing | null>(null);
   const [message, setMessage] = useState<VoteResult | null>(null);
-  const [sessionVotes, setSessionVotes] = useState<Partial<Record<AgeCategory, string>>>({});
+  const [sessionLikes, setSessionLikes] = useState<string[]>([]);
   const [ageFilter, setAgeFilter] = useState<AgeCategory | "all">("all");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -57,12 +57,12 @@ export function Gallery({ drawings, employee }: GalleryProps) {
     ? (groupedDrawings.find((drawing) => drawing.id === selected.id) ?? selected)
     : null;
 
-  function categoryHasVote(ageCategory: AgeCategory) {
-    return Boolean(employee.votedCategories[ageCategory] || sessionVotes[ageCategory]);
+  function hasLiked(drawingId: string) {
+    return employee.likedDrawingIds.includes(drawingId) || sessionLikes.includes(drawingId);
   }
 
-  function markCategoryVoted(ageCategory: AgeCategory, drawingId: string) {
-    setSessionVotes((current) => ({ ...current, [ageCategory]: drawingId }));
+  function markLiked(drawingId: string) {
+    setSessionLikes((current) => (current.includes(drawingId) ? current : [...current, drawingId]));
   }
 
   function updateVoteCount(drawingId: string, voteCount?: number) {
@@ -78,11 +78,11 @@ export function Gallery({ drawings, employee }: GalleryProps) {
   function vote(drawing: Drawing) {
     setMessage(null);
 
-    if (categoryHasVote(drawing.age_category)) {
+    if (hasLiked(drawing.id)) {
       setMessage({
-        status: "already_voted_category",
-        message: ALREADY_VOTED_CATEGORY_MESSAGE,
-        ageCategory: drawing.age_category
+        status: "already_liked",
+        message: ALREADY_LIKED_MESSAGE,
+        drawingId: drawing.id
       });
       return;
     }
@@ -93,12 +93,12 @@ export function Gallery({ drawings, employee }: GalleryProps) {
       const result = await submitVote(drawing.id, identity);
 
       if (result.status === "success") {
-        markCategoryVoted(drawing.age_category, drawing.id);
+        markLiked(drawing.id);
         updateVoteCount(drawing.id, result.voteCount);
         setMessage({ status: "success", message: SUCCESS_MESSAGE });
       } else {
-        if (result.status === "already_voted" || result.status === "already_voted_category") {
-          markCategoryVoted(result.ageCategory ?? drawing.age_category, drawing.id);
+        if (result.status === "already_liked") {
+          markLiked(result.drawingId ?? drawing.id);
         }
 
         setMessage(result);
@@ -111,7 +111,7 @@ export function Gallery({ drawings, employee }: GalleryProps) {
   const categoryVoteNotice = (
       <div className="mb-7 rounded-lg border border-neutral-200 bg-white px-5 py-4 text-sm leading-6 text-neutral-600">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <p>Та насны ангилал тус бүрт нэг санал өгөх боломжтой.</p>
+        <p>Таалагдсан зургууддаа like дараарай.</p>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
@@ -160,7 +160,7 @@ export function Gallery({ drawings, employee }: GalleryProps) {
             "sticky top-4 z-20 mx-auto max-w-xl rounded-full px-5 py-3 text-center text-sm font-medium shadow-[0_16px_40px_rgba(0,0,0,0.08)]",
             message.status === "success"
               ? "bg-neutral-950 text-white"
-              : message.status === "already_voted" || message.status === "already_voted_category"
+              : message.status === "already_liked"
                 ? "bg-white text-neutral-950 ring-1 ring-neutral-200"
                 : "bg-red-50 text-red-700 ring-1 ring-red-100"
           )}
@@ -171,7 +171,7 @@ export function Gallery({ drawings, employee }: GalleryProps) {
 
       <section className="columns-1 gap-7 sm:columns-2 xl:columns-3">
         {groupedDrawings.map((drawing) => {
-          const votedInCategory = categoryHasVote(drawing.age_category);
+          const liked = hasLiked(drawing.id);
           return (
           <article
             key={drawing.id}
@@ -200,16 +200,23 @@ export function Gallery({ drawings, employee }: GalleryProps) {
                   {drawing.title}
                 </h2>
                 <p className="mt-2 text-sm font-medium text-neutral-500">
-                  {drawing.vote_count} санал
+                  {drawing.vote_count} таалагдсан
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => vote(drawing)}
-                disabled={votedInCategory || pendingId === drawing.id || isPending}
-                className="shrink-0 rounded-full border border-neutral-950 bg-neutral-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white hover:text-neutral-950 disabled:cursor-not-allowed disabled:border-neutral-300 disabled:bg-neutral-300 disabled:text-white"
+                disabled={liked || pendingId === drawing.id || isPending}
+                aria-label={liked ? "Like дарсан" : "Like дарах"}
+                className={clsx(
+                  "grid h-11 w-11 shrink-0 place-items-center rounded-full border text-xl leading-none transition disabled:cursor-not-allowed",
+                  liked
+                    ? "border-neutral-950 bg-neutral-950 text-white"
+                    : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-950 hover:text-neutral-950",
+                  pendingId === drawing.id && "opacity-60"
+                )}
               >
-                {pendingId === drawing.id ? "Бүртгэж байна..." : votedInCategory ? "Санал өгсөн" : "Санал өгөх"}
+                {pendingId === drawing.id ? "…" : liked ? "♥" : "♡"}
               </button>
             </div>
           </article>
@@ -265,20 +272,23 @@ export function Gallery({ drawings, employee }: GalleryProps) {
                   Насны ангилал <span className="text-neutral-950">{selectedDrawing.age_category}</span>
                 </p>
                 <p className="mt-1 text-sm font-medium text-neutral-950">
-                  {selectedDrawing.vote_count} санал
+                  {selectedDrawing.vote_count} таалагдсан
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => vote(selectedDrawing)}
-                disabled={categoryHasVote(selectedDrawing.age_category) || pendingId === selectedDrawing.id || isPending}
-                className="rounded-full border border-neutral-950 bg-neutral-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white hover:text-neutral-950 disabled:cursor-not-allowed disabled:border-neutral-300 disabled:bg-neutral-300 disabled:text-white"
+                disabled={hasLiked(selectedDrawing.id) || pendingId === selectedDrawing.id || isPending}
+                aria-label={hasLiked(selectedDrawing.id) ? "Like дарсан" : "Like дарах"}
+                className={clsx(
+                  "grid h-12 w-12 place-items-center rounded-full border text-2xl leading-none transition disabled:cursor-not-allowed",
+                  hasLiked(selectedDrawing.id)
+                    ? "border-neutral-950 bg-neutral-950 text-white"
+                    : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-950 hover:text-neutral-950",
+                  pendingId === selectedDrawing.id && "opacity-60"
+                )}
               >
-                {pendingId === selectedDrawing.id
-                  ? "Бүртгэж байна..."
-                  : categoryHasVote(selectedDrawing.age_category)
-                    ? "Санал өгсөн"
-                    : "Санал өгөх"}
+                {pendingId === selectedDrawing.id ? "…" : hasLiked(selectedDrawing.id) ? "♥" : "♡"}
               </button>
             </div>
           </div>

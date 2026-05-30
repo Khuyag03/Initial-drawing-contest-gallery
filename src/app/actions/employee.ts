@@ -3,38 +3,27 @@
 import { revalidatePath, unstable_noStore as noStore } from "next/cache";
 import { clearEmployeeSession, getEmployeeSessionId, normalizeSapCode, setEmployeeSession } from "@/lib/employee-auth";
 import { createServiceSupabaseClient, hasServerSupabaseEnv } from "@/lib/supabase";
-import { AGE_CATEGORIES, type AgeCategory, type EmployeeAccess, type SapValidationResult } from "@/types";
+import type { EmployeeAccess, SapValidationResult } from "@/types";
 
 const INVALID_SAP_MESSAGE = "SAP дугаар олдсонгүй. Та дугаараа шалгаад дахин оролдоно уу.";
-const INACTIVE_MESSAGE = "Таны санал өгөх эрх идэвхгүй байна. Админтай холбогдоно уу.";
+const INACTIVE_MESSAGE = "Таны like дарах эрх идэвхгүй байна. Админтай холбогдоно уу.";
 const EMPLOYEE_SCHEMA_MISSING_MESSAGE =
   "Ажилтны хүснэгт Supabase дээр үүсээгүй байна. Эхлээд supabase/schema.sql файлыг SQL Editor дээр ажиллуулаад, дараа нь /admin/employees хэсгээс Allstaff.xlsx импортлоно уу.";
 
-function emptyVotingStatus(): Partial<Record<AgeCategory, string>> {
-  return {};
-}
-
-async function getVotingStatus(employeeId: string) {
+async function getLikedDrawingIds(employeeId: string) {
   const supabase = createServiceSupabaseClient();
   const { data, error } = await supabase
     .from("votes")
-    .select("age_category,drawing_id")
+    .select("drawing_id")
     .eq("employee_id", employeeId)
     .is("deleted_at", null);
 
   if (error) {
-    console.error("Unable to load employee voting status", error);
-    return emptyVotingStatus();
+    console.error("Unable to load employee liked drawings", error);
+    return [];
   }
 
-  const votedCategories: Partial<Record<AgeCategory, string>> = {};
-  for (const vote of data ?? []) {
-    if (AGE_CATEGORIES.includes(vote.age_category)) {
-      votedCategories[vote.age_category] = vote.drawing_id;
-    }
-  }
-
-  return votedCategories;
+  return (data ?? []).map((vote) => vote.drawing_id);
 }
 
 export async function getCurrentEmployeeAccess(): Promise<EmployeeAccess | null> {
@@ -62,14 +51,14 @@ export async function getCurrentEmployeeAccess(): Promise<EmployeeAccess | null>
 
   return {
     ...employee,
-    votedCategories: await getVotingStatus(employee.id)
+    likedDrawingIds: await getLikedDrawingIds(employee.id)
   };
 }
 
-export async function getCurrentEmployeeVotingStatus() {
+export async function getMyLikedDrawingIds() {
   noStore();
   const employee = await getCurrentEmployeeAccess();
-  return employee?.votedCategories ?? emptyVotingStatus();
+  return employee?.likedDrawingIds ?? [];
 }
 
 export async function validateSapCode(sapCode: string): Promise<SapValidationResult> {
@@ -111,7 +100,7 @@ export async function validateSapCode(sapCode: string): Promise<SapValidationRes
   await setEmployeeSession(employee.id);
   const access: EmployeeAccess = {
     ...employee,
-    votedCategories: await getVotingStatus(employee.id)
+    likedDrawingIds: await getLikedDrawingIds(employee.id)
   };
 
   revalidatePath("/");

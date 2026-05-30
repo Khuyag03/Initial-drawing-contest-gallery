@@ -1,6 +1,6 @@
 # Children’s Day Drawing Contest Voting Gallery
 
-Production-ready Next.js App Router app for an employee SAP-gated Children’s Day drawing contest gallery. Employees enter their SAP code, browse drawings, see public vote totals, and vote once per age category.
+Production-ready Next.js App Router app for an employee SAP-gated Children’s Day drawing contest gallery. Employees enter their SAP code, browse drawings, see public like totals, and like any number of drawings once each.
 
 ## Stack
 
@@ -26,7 +26,7 @@ npm install
 -- paste supabase/schema.sql
 ```
 
-This creates `drawings`, `employees`, `votes`, the public aggregate `public_drawings_with_votes` view, the `drawing-images` storage bucket, indexes, the `(employee_id, age_category)` active-vote unique index, and RLS policies.
+This creates `drawings`, `employees`, `votes`, the public aggregate `public_drawings_with_votes` view, the `drawing-images` storage bucket, indexes, the `(employee_id, drawing_id)` active-like unique index, and RLS policies.
 
 Run this SQL again after pulling updates if you already deployed an older device-based version. Old anonymous votes cannot be mapped to employees, so the migration clears unmapped vote rows.
 
@@ -72,13 +72,14 @@ Open `http://localhost:3000`.
 
 ## Voting Security
 
-- One vote is allowed per active SAP employee in each age category: `4–7 нас`, `8–11 нас`, and `12–16 нас`.
+- One active like is allowed per SAP employee per drawing.
+- Employees can like multiple drawings across any age category.
 - SAP access is stored in a signed httpOnly cookie and revalidated server-side before each vote.
 - The client creates a localStorage device ID, a cookie device ID, and a browser fingerprint hash.
 - Device, IP, user-agent, and browser summary are stored only as optional audit metadata.
 - The server combines device/IP/user-agent identifiers into HMAC hashes.
-- `votes` stores employee identity snapshots and has a partial unique `(employee_id, age_category)` index for active votes.
-- Resetting voting rights soft-deletes votes so the employee can vote again.
+- `votes` stores employee identity snapshots and has a partial unique `(employee_id, drawing_id)` index for active likes.
+- Removing likes soft-deletes rows so an employee can like that drawing again if restored/reset by admin.
 - Public users cannot read `votes`.
 - Public users cannot read `employees`.
 - Public users read vote totals only through the aggregate `public_drawings_with_votes` view.

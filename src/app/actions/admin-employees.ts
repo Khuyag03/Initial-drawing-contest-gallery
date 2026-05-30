@@ -316,7 +316,7 @@ export async function adminResetEmployeeVotes(employeeId: string): Promise<Actio
   }
 
   refreshAdminData();
-  return ok("Ажилтны саналын эрх шинэчлэгдлээ.");
+  return ok("Ажилтны бүх like хасагдлаа.");
 }
 
 export async function adminResetAllEmployeeVotes(): Promise<ActionState> {
@@ -337,11 +337,11 @@ export async function adminResetAllEmployeeVotes(): Promise<ActionState> {
 
   if (error) {
     console.error("Reset all votes failed", error);
-    return fail("Бүх саналын эрх шинэчлэхэд алдаа гарлаа.");
+    return fail("Бүх like хасахад алдаа гарлаа.");
   }
 
   refreshAdminData();
-  return ok("Бүх ажилтны саналын эрх шинэчлэгдлээ.");
+  return ok("Бүх ажилтны like хасагдлаа.");
 }
 
 export async function adminDeleteEmployee(employeeId: string): Promise<ActionState> {
@@ -433,11 +433,11 @@ export async function adminDeleteVote(voteId: string): Promise<ActionState> {
 
   if (error) {
     console.error("Delete vote failed", error);
-    return fail("Санал устгахад алдаа гарлаа.");
+    return fail("Like хасахад алдаа гарлаа.");
   }
 
   refreshAdminData();
-  return ok("Санал хасагдлаа.");
+  return ok("Like хасагдлаа.");
 }
 
 export async function adminRestoreVote(voteId: string): Promise<ActionState> {
@@ -458,9 +458,9 @@ export async function adminRestoreVote(voteId: string): Promise<ActionState> {
 
   if (error) {
     console.error("Restore vote failed", error);
-    return fail(`Санал сэргээхэд алдаа гарлаа: ${error.message}`);
+    return fail(`Like сэргээхэд алдаа гарлаа: ${error.message}`);
   }
 
   refreshAdminData();
-  return ok("Санал сэргээгдлээ.");
+  return ok("Like сэргээгдлээ.");
 }

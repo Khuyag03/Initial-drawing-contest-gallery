@@ -110,7 +110,7 @@ export function EmployeeDashboard({ employees }: EmployeeDashboardProps) {
   }
 
   function exportCsv() {
-    const header = ["SAP", "First Name", "Last Name", "Status", "Votes used", "Last vote date"];
+    const header = ["SAP", "First Name", "Last Name", "Status", "Total likes", "Last like date"];
     const rows = filteredEmployees.map((employee) => [
       employee.sap_code,
       employee.first_name,
@@ -144,7 +144,7 @@ export function EmployeeDashboard({ employees }: EmployeeDashboardProps) {
               Зураг
             </Link>
             <Link href="/admin/votes" className="rounded-full border border-neutral-200 px-5 py-2.5 text-sm font-semibold text-neutral-700 transition hover:border-neutral-950">
-              Саналууд
+              Like бүртгэл
             </Link>
           </div>
         </header>
@@ -214,8 +214,8 @@ export function EmployeeDashboard({ employees }: EmployeeDashboardProps) {
                 <button type="button" onClick={exportCsv} className="rounded-full border border-neutral-200 px-5 py-3 text-sm font-semibold text-neutral-700 transition hover:border-neutral-950">
                   CSV татах
                 </button>
-                <button type="button" onClick={() => window.confirm("Бүх ажилтны саналын эрхийг шинэчлэх үү?") && runEmployeeAction(adminResetAllEmployeeVotes)} disabled={isPending} className="rounded-full border border-red-100 px-5 py-3 text-sm font-semibold text-red-700 transition hover:border-red-300 disabled:opacity-50">
-                  Бүгдийн эрх шинэчлэх
+                <button type="button" onClick={() => window.confirm("Бүх ажилтны like-ийг хасах уу?") && runEmployeeAction(adminResetAllEmployeeVotes)} disabled={isPending} className="rounded-full border border-red-100 px-5 py-3 text-sm font-semibold text-red-700 transition hover:border-red-300 disabled:opacity-50">
+                  Бүгдийн like хасах
                 </button>
               </div>
             </div>
@@ -228,14 +228,14 @@ export function EmployeeDashboard({ employees }: EmployeeDashboardProps) {
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-400">SAP {employee.sap_code}</p>
                       <h2 className="mt-1 text-xl font-medium text-neutral-950">{employee.first_name} {employee.last_name}</h2>
                       <p className="mt-2 text-sm text-neutral-500">
-                        {employee.status} · {employee.votes_used} санал · {employee.last_vote_date ? new Date(employee.last_vote_date).toLocaleString() : "Санал өгөөгүй"}
+                        {employee.status} · {employee.votes_used} like · {employee.last_vote_date ? new Date(employee.last_vote_date).toLocaleString() : "Like дараагүй"}
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <button type="button" onClick={() => runEmployeeAction(() => adminUpdateEmployeeStatus(employee.id, "active"))} className="rounded-full border border-neutral-200 px-4 py-2 text-sm font-semibold text-neutral-700">Идэвхжүүлэх</button>
                       <button type="button" onClick={() => runEmployeeAction(() => adminUpdateEmployeeStatus(employee.id, "inactive"))} className="rounded-full border border-neutral-200 px-4 py-2 text-sm font-semibold text-neutral-700">Идэвхгүй болгох</button>
                       <button type="button" onClick={() => runEmployeeAction(() => adminUpdateEmployeeStatus(employee.id, "blocked"))} className="rounded-full border border-neutral-200 px-4 py-2 text-sm font-semibold text-neutral-700">Блоклох</button>
-                      <button type="button" onClick={() => window.confirm("Энэ ажилтны саналын эрхийг шинэчлэх үү?") && runEmployeeAction(() => adminResetEmployeeVotes(employee.id))} className="rounded-full border border-neutral-200 px-4 py-2 text-sm font-semibold text-neutral-700">Эрх шинэчлэх</button>
+                      <button type="button" onClick={() => window.confirm("Энэ ажилтны бүх like-ийг хасах уу?") && runEmployeeAction(() => adminResetEmployeeVotes(employee.id))} className="rounded-full border border-neutral-200 px-4 py-2 text-sm font-semibold text-neutral-700">Like хасах</button>
                       <button type="button" onClick={() => setEditingId(editingId === employee.id ? null : employee.id)} className="rounded-full border border-neutral-200 px-4 py-2 text-sm font-semibold text-neutral-700">Засах</button>
                       <button type="button" onClick={() => window.confirm("Ажилтныг устгах уу?") && runEmployeeAction(() => adminDeleteEmployee(employee.id))} className="rounded-full border border-red-100 px-4 py-2 text-sm font-semibold text-red-700">Устгах</button>
                     </div>

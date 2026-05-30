@@ -150,7 +150,7 @@ export function AdminDashboard({ drawings }: AdminDashboardProps) {
   }
 
   function exportCsv() {
-    const header = ["Title", "Child name/code", "Age category", "Votes", "Created at"];
+    const header = ["Title", "Child name/code", "Age category", "Likes", "Created at"];
     const rows = filteredDrawings.map((drawing) => [
       drawing.title,
       drawing.child_name,
@@ -163,7 +163,7 @@ export function AdminDashboard({ drawings }: AdminDashboardProps) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `childrens-day-vote-results-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = `childrens-day-like-results-${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   }
@@ -177,7 +177,7 @@ export function AdminDashboard({ drawings }: AdminDashboardProps) {
               Админ хэсэг
             </p>
             <h1 className="text-4xl font-semibold leading-none text-neutral-950 sm:text-6xl">
-              Саналын удирдлага
+              Like удирдлага
             </h1>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -185,7 +185,7 @@ export function AdminDashboard({ drawings }: AdminDashboardProps) {
               Ажилтны эрх
             </Link>
             <Link href="/admin/votes" className="rounded-full border border-neutral-200 bg-white px-5 py-2.5 text-sm font-semibold text-neutral-600 transition hover:border-neutral-950 hover:text-neutral-950">
-              Саналууд
+              Like бүртгэл
             </Link>
             <form action={logoutAdmin}>
               <button
@@ -204,7 +204,7 @@ export function AdminDashboard({ drawings }: AdminDashboardProps) {
             <p className="mt-3 text-4xl font-medium text-neutral-950">{drawings.length}</p>
           </div>
           <div className="bg-white p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-400">Нийт санал</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-400">Нийт like</p>
             <p className="mt-3 text-4xl font-medium text-neutral-950">{totalVotes}</p>
           </div>
           <div className="bg-white p-5">
@@ -219,7 +219,7 @@ export function AdminDashboard({ drawings }: AdminDashboardProps) {
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-400">
                 {item.category} нас
               </p>
-              <p className="mt-2 text-2xl font-medium text-neutral-950">{item.voteCount} санал</p>
+              <p className="mt-2 text-2xl font-medium text-neutral-950">{item.voteCount} like</p>
             </div>
           ))}
         </div>
@@ -315,7 +315,7 @@ export function AdminDashboard({ drawings }: AdminDashboardProps) {
                     onChange={(event) => setSort(event.target.value as SortKey)}
                     className="mt-2 block w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 outline-none focus:border-neutral-950 sm:w-40"
                   >
-                    <option value="votes">Санал</option>
+                    <option value="votes">Like</option>
                     <option value="created">Огноо</option>
                     <option value="title">Нэр</option>
                   </select>
@@ -346,7 +346,7 @@ export function AdminDashboard({ drawings }: AdminDashboardProps) {
                     </div>
                     <div className="flex items-center gap-2 sm:flex-col sm:items-end">
                       <p className="rounded-full border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm font-semibold text-neutral-950">
-                        {drawing.vote_count} санал
+                        {drawing.vote_count} like
                       </p>
                       <div className="flex gap-2">
                         <button

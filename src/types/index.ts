@@ -27,7 +27,7 @@ export type Employee = {
 };
 
 export type EmployeeAccess = Pick<Employee, "id" | "sap_code" | "first_name" | "last_name" | "status"> & {
-  votedCategories: Partial<Record<AgeCategory, string>>;
+  likedDrawingIds: string[];
 };
 
 export type AdminEmployeeRow = Employee & {
@@ -56,10 +56,10 @@ export type VoteIdentity = {
 };
 
 export type VoteResult = {
-  status: "success" | "already_voted" | "already_voted_category" | "error";
+  status: "success" | "already_liked" | "error";
   message: string;
-  ageCategory?: AgeCategory;
   voteCount?: number;
+  drawingId?: string;
 };
 
 export type ActionState = {

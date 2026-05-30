@@ -47,7 +47,7 @@ export default async function HomePage() {
               “МИНИЙ ЕРТӨНЦ” хүүхдийн гар зургийн уралдаан
             </h1>
             <p className="mt-6 max-w-3xl text-base leading-7 text-neutral-700 sm:text-lg sm:leading-8">
-              Та насны ангилал тус бүрээс хамгийн их таалагдсан нэг бүтээлд саналаа өгөх боломжтой.
+              Таалагдсан зургууддаа like дарж дэмжээрэй.
             </p>
             <div className="mt-8 grid max-w-4xl gap-3 border-t border-neutral-950/15 pt-5 sm:grid-cols-[120px_1fr]">
               <p className="text-sm font-semibold text-neutral-950">Зорилго</p>
@@ -69,7 +69,7 @@ export default async function HomePage() {
             <h2 className="text-2xl font-medium text-neutral-950 sm:text-3xl">Бүтээлүүд</h2>
           </div>
           <p className="max-w-md text-sm leading-6 text-neutral-500">
-            Саналын тоо бүтээл бүр дээр харагдах бөгөөд нэг SAP код насны ангилал бүрт нэг удаа санал өгнө.
+            Like-ийн тоо бүтээл бүр дээр харагдах бөгөөд нэг SAP код нэг зураг дээр нэг удаа like дарна.
           </p>
         </header>
       </section>

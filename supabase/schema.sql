@@ -96,8 +96,9 @@ drop index if exists votes_device_category_active_unique;
 drop index if exists votes_device_hash_key;
 drop index if exists votes_device_category_unique;
 drop index if exists votes_employee_category_active_unique;
-create unique index if not exists votes_employee_category_active_unique
-on public.votes(employee_id, age_category)
+drop index if exists votes_employee_drawing_active_unique;
+create unique index if not exists votes_employee_drawing_active_unique
+on public.votes(employee_id, drawing_id)
 where deleted_at is null;
 
 create index if not exists drawings_created_at_idx on public.drawings(created_at desc);

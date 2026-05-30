@@ -50,7 +50,7 @@ export function PublicVotingApp({ drawings, initialEmployee }: PublicVotingAppPr
             Хүүхдийн гар зургийн санал хураалт
           </h2>
           <p className="mt-4 text-sm leading-6 text-neutral-500">
-            Санал өгөхийн тулд SAP дугаараа оруулна уу.
+            Like дарахын тулд SAP дугаараа оруулна уу.
           </p>
 
           <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
@@ -82,7 +82,7 @@ export function PublicVotingApp({ drawings, initialEmployee }: PublicVotingAppPr
           ) : null}
 
           <p className="mt-5 text-xs leading-5 text-neutral-400">
-            Та насны ангилал тус бүрт нэг санал өгөх боломжтой.
+            Таалагдсан зургууддаа like дараарай.
           </p>
         </div>
       </section>

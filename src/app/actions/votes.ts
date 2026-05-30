@@ -10,9 +10,9 @@ import { isUuid, normalizeIdentityPart } from "@/lib/validators";
 import type { VoteIdentity, VoteResult } from "@/types";
 
 const DEVICE_COOKIE = "contest_device_id";
-const SUCCESS_MESSAGE = "Таны санал амжилттай бүртгэгдлээ.";
-const ALREADY_VOTED_CATEGORY_MESSAGE = "Та энэ насны ангилалд аль хэдийн санал өгсөн байна.";
-const INACTIVE_EMPLOYEE_MESSAGE = "Таны санал өгөх эрх идэвхгүй байна.";
+const SUCCESS_MESSAGE = "Таны like бүртгэгдлээ.";
+const ALREADY_LIKED_MESSAGE = "Та энэ зурагт аль хэдийн like дарсан байна.";
+const INACTIVE_EMPLOYEE_MESSAGE = "Таны like дарах эрх идэвхгүй байна.";
 
 function getRequestIp(requestHeaders: Pick<Headers, "get">) {
   const forwardedFor = requestHeaders.get("x-forwarded-for");
@@ -51,7 +51,7 @@ export async function submitVote(
   const employeeId = await getEmployeeSessionId();
 
   if (!employeeId) {
-    return voteError("Санал өгөхийн тулд SAP дугаараар нэвтэрнэ үү.");
+    return voteError("Like дарахын тулд SAP дугаараар нэвтэрнэ үү.");
   }
 
   const serverCookieDeviceId = normalizeIdentityPart(cookieStore.get(DEVICE_COOKIE)?.value);
@@ -118,7 +118,7 @@ export async function submitVote(
     .from("votes")
     .select("id")
     .eq("employee_id", employee.id)
-    .eq("age_category", drawing.age_category)
+    .eq("drawing_id", drawing.id)
     .is("deleted_at", null)
     .maybeSingle();
 
@@ -129,9 +129,9 @@ export async function submitVote(
 
   if (existingVote) {
     return {
-      status: "already_voted_category",
-      message: ALREADY_VOTED_CATEGORY_MESSAGE,
-      ageCategory: drawing.age_category
+      status: "already_liked",
+      message: ALREADY_LIKED_MESSAGE,
+      drawingId: drawing.id
     };
   }
 
@@ -151,9 +151,9 @@ export async function submitVote(
   if (error) {
     if (error.code === "23505") {
       return {
-        status: "already_voted_category",
-        message: ALREADY_VOTED_CATEGORY_MESSAGE,
-        ageCategory: drawing.age_category
+        status: "already_liked",
+        message: ALREADY_LIKED_MESSAGE,
+        drawingId: drawing.id
       };
     }
 
@@ -178,7 +178,7 @@ export async function submitVote(
   return {
     status: "success",
     message: SUCCESS_MESSAGE,
-    ageCategory: drawing.age_category,
+    drawingId: drawing.id,
     voteCount: count ?? undefined
   };
 }
