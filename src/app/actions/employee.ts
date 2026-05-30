@@ -57,7 +57,6 @@ export async function getCurrentEmployeeAccess(): Promise<EmployeeAccess | null>
     .maybeSingle();
 
   if (error || !employee || employee.status !== "active") {
-    await clearEmployeeSession();
     return null;
   }
 
