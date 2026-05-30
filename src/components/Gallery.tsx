@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import clsx from "clsx";
 import { submitVote } from "@/app/actions/votes";
@@ -31,8 +31,8 @@ function DrawingImage({ drawing, variant }: DrawingImageProps) {
       className={clsx(
         "relative overflow-hidden bg-neutral-100",
         isLightbox
-          ? "h-[74vh] w-full rounded-md"
-          : "aspect-[4/5] w-full rounded-lg"
+          ? "h-[80vh] max-h-[80vh] w-[90vw] max-w-6xl rounded-md"
+          : "aspect-video w-full rounded-lg"
       )}
     >
       {!loaded ? (
@@ -53,7 +53,8 @@ function DrawingImage({ drawing, variant }: DrawingImageProps) {
         loading="lazy"
         onLoad={() => setLoaded(true)}
         className={clsx(
-          "object-contain transition duration-700",
+          "transition duration-700",
+          isLightbox ? "object-contain" : "object-cover",
           loaded ? "opacity-100" : "opacity-0",
           !isLightbox && "group-hover:scale-[1.018]"
         )}
@@ -64,32 +65,14 @@ function DrawingImage({ drawing, variant }: DrawingImageProps) {
 
 export function Gallery({ drawings, employee }: GalleryProps) {
   const [voteCountOverrides, setVoteCountOverrides] = useState<Record<string, number>>({});
-  const [selected, setSelected] = useState<Drawing | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [message, setMessage] = useState<VoteResult | null>(null);
   const [sessionLikes, setSessionLikes] = useState<string[]>([]);
   const [ageFilter, setAgeFilter] = useState<AgeCategory | "all">("all");
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef<number | null>(null);
   const [isPending, startTransition] = useTransition();
-
-  useEffect(() => {
-    if (!selected) {
-      return;
-    }
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setSelected(null);
-      }
-    };
-
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", onKeyDown);
-
-    return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [selected]);
 
   const groupedDrawings = useMemo(
     () =>
@@ -101,9 +84,101 @@ export function Gallery({ drawings, employee }: GalleryProps) {
         })),
     [ageFilter, drawings, voteCountOverrides]
   );
-  const selectedDrawing = selected
-    ? (groupedDrawings.find((drawing) => drawing.id === selected.id) ?? selected)
-    : null;
+  const selectedIndex = selectedId
+    ? groupedDrawings.findIndex((drawing) => drawing.id === selectedId)
+    : -1;
+  const selectedDrawing = selectedIndex >= 0 ? groupedDrawings[selectedIndex] : null;
+
+  const closeLightbox = useCallback(() => {
+    setSelectedId(null);
+  }, []);
+
+  const showPrevious = useCallback(() => {
+    setSelectedId((current) => {
+      const currentIndex = current
+        ? groupedDrawings.findIndex((drawing) => drawing.id === current)
+        : -1;
+
+      if (currentIndex < 0 || groupedDrawings.length === 0) {
+        return current;
+      }
+
+      const previousIndex = currentIndex === 0 ? groupedDrawings.length - 1 : currentIndex - 1;
+      return groupedDrawings[previousIndex]?.id ?? current;
+    });
+  }, [groupedDrawings]);
+
+  const showNext = useCallback(() => {
+    setSelectedId((current) => {
+      const currentIndex = current
+        ? groupedDrawings.findIndex((drawing) => drawing.id === current)
+        : -1;
+
+      if (currentIndex < 0 || groupedDrawings.length === 0) {
+        return current;
+      }
+
+      const nextIndex = currentIndex === groupedDrawings.length - 1 ? 0 : currentIndex + 1;
+      return groupedDrawings[nextIndex]?.id ?? current;
+    });
+  }, [groupedDrawings]);
+
+  useEffect(() => {
+    if (selectedDrawing === null) {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeLightbox();
+        return;
+      }
+
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        showPrevious();
+        return;
+      }
+
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        showNext();
+        return;
+      }
+
+      if (event.key === "Tab" && modalRef.current) {
+        const focusable = Array.from(
+          modalRef.current.querySelectorAll<HTMLElement>(
+            'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])'
+          )
+        );
+
+        if (focusable.length === 0) {
+          return;
+        }
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+    modalRef.current?.focus();
+
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [closeLightbox, selectedDrawing, showNext, showPrevious]);
 
   function hasLiked(drawingId: string) {
     return employee.likedDrawingIds.includes(drawingId) || sessionLikes.includes(drawingId);
@@ -218,17 +293,17 @@ export function Gallery({ drawings, employee }: GalleryProps) {
         </div>
       ) : null}
 
-      <section className="columns-1 gap-7 sm:columns-2 xl:columns-3">
+      <section className="grid gap-7 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {groupedDrawings.map((drawing) => {
           const liked = hasLiked(drawing.id);
           return (
           <article
             key={drawing.id}
-            className="group mb-8 break-inside-avoid"
+            className="group"
           >
             <button
               type="button"
-              onClick={() => setSelected(drawing)}
+              onClick={() => setSelectedId(drawing.id)}
               className="block w-full overflow-hidden rounded-lg bg-neutral-100 text-left ring-1 ring-neutral-200/80 transition duration-500 group-hover:-translate-y-1 group-hover:ring-neutral-300"
               aria-label={`${drawing.title} томоор харах`}
             >
@@ -279,11 +354,35 @@ export function Gallery({ drawings, employee }: GalleryProps) {
           role="dialog"
           aria-modal="true"
           className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-neutral-950/95 p-3 sm:p-6"
-          onClick={() => setSelected(null)}
+          onClick={closeLightbox}
         >
           <div
-            className="modal-panel flex max-h-full w-full max-w-7xl flex-col gap-5"
+            ref={modalRef}
+            tabIndex={-1}
+            className="modal-panel flex max-h-full w-full max-w-7xl flex-col gap-5 outline-none"
             onClick={(event) => event.stopPropagation()}
+            onTouchStart={(event) => {
+              touchStartX.current = event.touches[0]?.clientX ?? null;
+            }}
+            onTouchEnd={(event) => {
+              if (touchStartX.current === null) {
+                return;
+              }
+
+              const touchEndX = event.changedTouches[0]?.clientX ?? touchStartX.current;
+              const delta = touchEndX - touchStartX.current;
+              touchStartX.current = null;
+
+              if (Math.abs(delta) < 50) {
+                return;
+              }
+
+              if (delta > 0) {
+                showPrevious();
+              } else {
+                showNext();
+              }
+            }}
           >
             <div className="flex items-center justify-between gap-3 text-white">
               <div className="min-w-0">
@@ -294,7 +393,7 @@ export function Gallery({ drawings, employee }: GalleryProps) {
               </div>
               <button
                 type="button"
-                onClick={() => setSelected(null)}
+                onClick={closeLightbox}
                 className="grid h-10 w-10 place-items-center rounded-full border border-white/15 bg-white/5 text-xl leading-none transition hover:bg-white/15"
                 aria-label="Хаах"
               >
@@ -302,9 +401,60 @@ export function Gallery({ drawings, employee }: GalleryProps) {
               </button>
             </div>
 
-            <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-white/[0.03]">
+            <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-white/[0.03]">
+              {groupedDrawings.length > 1 ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={showPrevious}
+                    className="absolute left-2 top-1/2 z-10 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-white/15 bg-neutral-950/45 text-2xl leading-none text-white backdrop-blur transition hover:bg-neutral-950/70 sm:left-4"
+                    aria-label="Өмнөх зураг"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    onClick={showNext}
+                    className="absolute right-2 top-1/2 z-10 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-white/15 bg-neutral-950/45 text-2xl leading-none text-white backdrop-blur transition hover:bg-neutral-950/70 sm:right-4"
+                    aria-label="Дараагийн зураг"
+                  >
+                    ›
+                  </button>
+                </>
+              ) : null}
               <DrawingImage drawing={selectedDrawing} variant="lightbox" />
             </div>
+
+            {groupedDrawings.length > 1 ? (
+              <div className="hidden gap-2 overflow-x-auto pb-1 sm:flex">
+                {groupedDrawings.map((drawing) => (
+                  <button
+                    key={drawing.id}
+                    type="button"
+                    onClick={() => setSelectedId(drawing.id)}
+                    className={clsx(
+                      "relative h-14 w-24 shrink-0 overflow-hidden rounded-md bg-white/10 ring-1 transition",
+                      selectedDrawing.id === drawing.id
+                        ? "ring-white"
+                        : "ring-white/10 hover:ring-white/45"
+                    )}
+                    aria-label={`${drawing.title} сонгох`}
+                  >
+                    <Image
+                      src={drawing.image_url}
+                      alt={drawing.title}
+                      fill
+                      sizes="96px"
+                      quality={42}
+                      placeholder="blur"
+                      blurDataURL={IMAGE_BLUR_DATA_URL}
+                      loading="lazy"
+                      className="object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            ) : null}
 
             <div className="flex flex-col gap-3 rounded-lg border border-white/10 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
