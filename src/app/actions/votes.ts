@@ -2,6 +2,7 @@
 
 import { cookies, headers } from "next/headers";
 import { revalidatePath, unstable_noStore as noStore } from "next/cache";
+import { getEmployeeSessionId } from "@/lib/employee-auth";
 import { hmacHash } from "@/lib/hash";
 import { isRateLimited } from "@/lib/rate-limit";
 import { createServiceSupabaseClient, hasServerSupabaseEnv } from "@/lib/supabase";
@@ -9,8 +10,9 @@ import { isUuid, normalizeIdentityPart } from "@/lib/validators";
 import type { VoteIdentity, VoteResult } from "@/types";
 
 const DEVICE_COOKIE = "contest_device_id";
-const SUCCESS_MESSAGE = "Таны санал амжилттай бүртгэгдлээ";
-const ALREADY_VOTED_MESSAGE = "Та аль хэдийн санал өгсөн байна";
+const SUCCESS_MESSAGE = "Таны санал амжилттай бүртгэгдлээ.";
+const ALREADY_VOTED_CATEGORY_MESSAGE = "Та энэ насны ангилалд аль хэдийн санал өгсөн байна.";
+const INACTIVE_EMPLOYEE_MESSAGE = "Таны санал өгөх эрх идэвхгүй байна.";
 
 function getRequestIp(requestHeaders: Pick<Headers, "get">) {
   const forwardedFor = requestHeaders.get("x-forwarded-for");
@@ -46,6 +48,12 @@ export async function submitVote(
 
   const requestHeaders = await headers();
   const cookieStore = await cookies();
+  const employeeId = await getEmployeeSessionId();
+
+  if (!employeeId) {
+    return voteError("Санал өгөхийн тулд SAP дугаараар нэвтэрнэ үү.");
+  }
+
   const serverCookieDeviceId = normalizeIdentityPart(cookieStore.get(DEVICE_COOKIE)?.value);
   const localDeviceId = normalizeIdentityPart(identity.localDeviceId);
   const browserCookieDeviceId = normalizeIdentityPart(identity.cookieDeviceId);
@@ -61,10 +69,6 @@ export async function submitVote(
     });
   }
 
-  if (!localDeviceId && !cookieDeviceId && !fingerprintHash) {
-    return voteError("Төхөөрөмжийн мэдээлэл уншигдсангүй.");
-  }
-
   const ip = getRequestIp(requestHeaders);
   const userAgent = requestHeaders.get("user-agent") || "";
   const ipHash = ip ? hmacHash(ip, "vote-ip") : null;
@@ -75,27 +79,47 @@ export async function submitVote(
     serverCookieDeviceId ||
     fingerprintHash ||
     `${ipHash || "no-ip"}|${userAgentHash || "no-user-agent"}`;
-  const deviceHash = hmacHash(canonicalDeviceId, "vote-device");
+  const deviceHash = canonicalDeviceId ? hmacHash(canonicalDeviceId, "vote-device") : null;
 
-  if (isRateLimited(deviceHash, 6, 60_000)) {
+  if (isRateLimited(deviceHash || employeeId, 6, 60_000)) {
     return voteError("Хэт олон удаа оролдлоо. Түр хүлээгээд дахин оролдоно уу.");
   }
 
   const supabase = createServiceSupabaseClient();
-  const { data: drawing, error: drawingError } = await supabase
-    .from("drawings")
-    .select("id")
-    .eq("id", drawingId)
-    .maybeSingle();
+  const [
+    { data: drawing, error: drawingError },
+    { data: employee, error: employeeError }
+  ] = await Promise.all([
+    supabase
+      .from("drawings")
+      .select("id,age_category")
+      .eq("id", drawingId)
+      .maybeSingle(),
+    supabase
+      .from("employees")
+      .select("id,sap_code,first_name,last_name,status")
+      .eq("id", employeeId)
+      .maybeSingle()
+  ]);
 
   if (drawingError || !drawing) {
     return voteError("Зураг олдсонгүй.");
   }
 
+  if (employeeError || !employee) {
+    return voteError("SAP эрх олдсонгүй. Дахин нэвтэрнэ үү.");
+  }
+
+  if (employee.status !== "active") {
+    return { status: "error", message: INACTIVE_EMPLOYEE_MESSAGE };
+  }
+
   const { data: existingVote, error: existingVoteError } = await supabase
     .from("votes")
     .select("id")
-    .eq("device_hash", deviceHash)
+    .eq("employee_id", employee.id)
+    .eq("age_category", drawing.age_category)
+    .is("deleted_at", null)
     .maybeSingle();
 
   if (existingVoteError) {
@@ -104,25 +128,57 @@ export async function submitVote(
   }
 
   if (existingVote) {
-    return { status: "already_voted", message: ALREADY_VOTED_MESSAGE };
+    return {
+      status: "already_voted_category",
+      message: ALREADY_VOTED_CATEGORY_MESSAGE,
+      ageCategory: drawing.age_category
+    };
   }
 
   const { error } = await supabase.from("votes").insert({
     drawing_id: drawingId,
+    employee_id: employee.id,
+    sap_code: employee.sap_code,
+    employee_first_name: employee.first_name,
+    employee_last_name: employee.last_name,
+    age_category: drawing.age_category,
     device_hash: deviceHash,
     ip_hash: ipHash,
-    user_agent_hash: userAgentHash
+    user_agent_hash: userAgentHash,
+    browser_summary: normalizeIdentityPart(identity.browserSummary)
   });
 
   if (error) {
     if (error.code === "23505") {
-      return { status: "already_voted", message: ALREADY_VOTED_MESSAGE };
+      return {
+        status: "already_voted_category",
+        message: ALREADY_VOTED_CATEGORY_MESSAGE,
+        ageCategory: drawing.age_category
+      };
     }
 
     console.error("Vote insert failed", error);
     return voteError();
   }
 
+  const { count, error: countError } = await supabase
+    .from("votes")
+    .select("id", { count: "exact", head: true })
+    .eq("drawing_id", drawingId)
+    .is("deleted_at", null);
+
+  if (countError) {
+    console.error("Vote count refresh failed", countError);
+  }
+
   revalidatePath("/");
-  return { status: "success", message: SUCCESS_MESSAGE };
+  revalidatePath("/admin");
+  revalidatePath("/admin/employees");
+  revalidatePath("/admin/votes");
+  return {
+    status: "success",
+    message: SUCCESS_MESSAGE,
+    ageCategory: drawing.age_category,
+    voteCount: count ?? undefined
+  };
 }

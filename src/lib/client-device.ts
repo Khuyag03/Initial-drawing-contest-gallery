@@ -1,10 +1,9 @@
 "use client";
 
-import type { VoteIdentity } from "@/types";
+import type { AgeCategory, VoteIdentity } from "@/types";
 
 const LOCAL_DEVICE_KEY = "children_day_vote_device_id";
-const VOTE_STATUS_KEY = "children_day_vote_complete";
-const VOTE_DRAWING_KEY = "children_day_vote_drawing_id";
+const VOTE_CATEGORIES_KEY = "children_day_vote_categories";
 const COOKIE_DEVICE_KEY = "contest_device_id";
 const VOTE_STATUS_EVENT = "children_day_vote_status";
 
@@ -70,21 +69,45 @@ export async function getVoteIdentity(): Promise<VoteIdentity> {
   return {
     localDeviceId,
     cookieDeviceId,
-    fingerprintHash: await browserFingerprintHash()
+    fingerprintHash: await browserFingerprintHash(),
+    browserSummary: `${navigator.platform || "unknown"} · ${navigator.language || "unknown"} · ${screen.width}x${screen.height}`
   };
 }
 
-export function hasLocalVote() {
+export function getLocalCategoryVotes(): Partial<Record<AgeCategory, string>> {
   if (typeof window === "undefined") {
-    return false;
+    return {};
   }
 
-  return localStorage.getItem(VOTE_STATUS_KEY) === "true";
+  const rawValue = localStorage.getItem(VOTE_CATEGORIES_KEY);
+  if (!rawValue) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(rawValue);
+    return typeof parsed === "object" && parsed !== null ? parsed : {};
+  } catch {
+    return {};
+  }
 }
 
-export function markLocalVote(drawingId: string) {
-  localStorage.setItem(VOTE_STATUS_KEY, "true");
-  localStorage.setItem(VOTE_DRAWING_KEY, drawingId);
+export function getLocalCategoryVoteSnapshot() {
+  if (typeof window === "undefined") {
+    return "{}";
+  }
+
+  return localStorage.getItem(VOTE_CATEGORIES_KEY) || "{}";
+}
+
+export function hasLocalCategoryVote(ageCategory: AgeCategory) {
+  return Boolean(getLocalCategoryVotes()[ageCategory]);
+}
+
+export function markLocalCategoryVote(ageCategory: AgeCategory, drawingId: string) {
+  const votes = getLocalCategoryVotes();
+  votes[ageCategory] = drawingId;
+  localStorage.setItem(VOTE_CATEGORIES_KEY, JSON.stringify(votes));
   window.dispatchEvent(new Event(VOTE_STATUS_EVENT));
 }
 

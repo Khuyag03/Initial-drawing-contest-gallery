@@ -289,7 +289,7 @@ export async function getAdminResults(): Promise<AdminDrawingResult[]> {
         .from("drawings")
         .select("id,title,child_name,age_category,image_url,created_at")
         .order("created_at", { ascending: false }),
-      supabase.from("votes").select("drawing_id")
+      supabase.from("votes").select("drawing_id").is("deleted_at", null)
     ]);
 
   if (drawingsError) {

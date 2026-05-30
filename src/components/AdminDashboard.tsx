@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { deleteDrawing, finalizeDrawingUpload, logoutAdmin, prepareDrawingUpload, updateDrawing } from "@/app/actions/admin";
@@ -44,6 +45,12 @@ export function AdminDashboard({ drawings }: AdminDashboardProps) {
   }, [drawings, filter, sort]);
 
   const totalVotes = drawings.reduce((sum, drawing) => sum + drawing.vote_count, 0);
+  const votesByAgeCategory = AGE_CATEGORIES.map((category) => ({
+    category,
+    voteCount: drawings
+      .filter((drawing) => drawing.age_category === category)
+      .reduce((sum, drawing) => sum + drawing.vote_count, 0)
+  }));
 
   function runAction(action: (formData: FormData) => Promise<ActionState>, formData: FormData, onSuccess?: () => void) {
     setNotice(idleState);
@@ -173,14 +180,22 @@ export function AdminDashboard({ drawings }: AdminDashboardProps) {
               Саналын удирдлага
             </h1>
           </div>
-          <form action={logoutAdmin}>
-            <button
-              type="submit"
-              className="rounded-full border border-neutral-200 bg-white px-5 py-2.5 text-sm font-semibold text-neutral-600 transition hover:border-neutral-950 hover:text-neutral-950"
-            >
-              Гарах
-            </button>
-          </form>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/admin/employees" className="rounded-full border border-neutral-200 bg-white px-5 py-2.5 text-sm font-semibold text-neutral-600 transition hover:border-neutral-950 hover:text-neutral-950">
+              Ажилтны эрх
+            </Link>
+            <Link href="/admin/votes" className="rounded-full border border-neutral-200 bg-white px-5 py-2.5 text-sm font-semibold text-neutral-600 transition hover:border-neutral-950 hover:text-neutral-950">
+              Саналууд
+            </Link>
+            <form action={logoutAdmin}>
+              <button
+                type="submit"
+                className="rounded-full border border-neutral-200 bg-white px-5 py-2.5 text-sm font-semibold text-neutral-600 transition hover:border-neutral-950 hover:text-neutral-950"
+              >
+                Гарах
+              </button>
+            </form>
+          </div>
         </header>
 
         <div className="mt-6 grid gap-px overflow-hidden rounded-lg border border-neutral-200 bg-neutral-200 sm:grid-cols-3">
@@ -196,6 +211,17 @@ export function AdminDashboard({ drawings }: AdminDashboardProps) {
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-400">Ангилал</p>
             <p className="mt-3 text-4xl font-medium text-neutral-950">{AGE_CATEGORIES.length}</p>
           </div>
+        </div>
+
+        <div className="mt-4 grid gap-px overflow-hidden rounded-lg border border-neutral-200 bg-neutral-200 sm:grid-cols-3">
+          {votesByAgeCategory.map((item) => (
+            <div key={item.category} className="bg-white p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-400">
+                {item.category} нас
+              </p>
+              <p className="mt-2 text-2xl font-medium text-neutral-950">{item.voteCount} санал</p>
+            </div>
+          ))}
         </div>
 
         {notice.message ? (

@@ -1,6 +1,6 @@
 # Children’s Day Drawing Contest Voting Gallery
 
-Production-ready Next.js App Router app for a private employee voting gallery. Public visitors can browse drawings and vote once per device. Vote totals stay hidden from public pages and are visible only in the password-protected admin dashboard.
+Production-ready Next.js App Router app for an employee SAP-gated Children’s Day drawing contest gallery. Employees enter their SAP code, browse drawings, see public vote totals, and vote once per age category.
 
 ## Stack
 
@@ -26,7 +26,9 @@ npm install
 -- paste supabase/schema.sql
 ```
 
-This creates `drawings`, `votes`, the `drawing-images` storage bucket, indexes, the `votes.device_hash` unique constraint, and RLS policies.
+This creates `drawings`, `employees`, `votes`, the public aggregate `public_drawings_with_votes` view, the `drawing-images` storage bucket, indexes, the `(employee_id, age_category)` active-vote unique index, and RLS policies.
+
+Run this SQL again after pulling updates if you already deployed an older device-based version. Old anonymous votes cannot be mapped to employees, so the migration clears unmapped vote rows.
 
 4. Copy the environment example:
 
@@ -52,20 +54,34 @@ npm run dev
 
 Open `http://localhost:3000`.
 
+7. Import employees:
+
+- Open `/admin/login`
+- Log in with `ADMIN_PASSWORD`
+- Open `/admin/employees`
+- Upload `Allstaff.xlsx`
+- The workbook must contain the `Employees` sheet with `SAP`, `First Name`, and `Last Name` columns.
+
 ## Pages
 
-- `/` public image-focused gallery with fullscreen lightbox and secret voting
+- `/` SAP access screen, then public image-focused gallery with fullscreen lightbox, visible vote totals, and category-based voting
 - `/admin/login` password login using `ADMIN_PASSWORD`
 - `/admin` protected dashboard for uploads, edits, deletes, vote counts, sorting, filtering, and CSV export
+- `/admin/employees` protected employee import and voting-rights management
+- `/admin/votes` protected vote record management with SAP and employee names
 
 ## Voting Security
 
-- One vote is allowed per device for the full contest.
+- One vote is allowed per active SAP employee in each age category: `3-6`, `7-10`, and `11-16`.
+- SAP access is stored in a signed httpOnly cookie and revalidated server-side before each vote.
 - The client creates a localStorage device ID, a cookie device ID, and a browser fingerprint hash.
-- The server combines those with hashed IP and hashed user-agent data.
-- Only HMAC hashes are stored in Supabase.
-- `votes.device_hash` has a unique constraint to stop duplicate submissions.
+- Device, IP, user-agent, and browser summary are stored only as optional audit metadata.
+- The server combines device/IP/user-agent identifiers into HMAC hashes.
+- `votes` stores employee identity snapshots and has a partial unique `(employee_id, age_category)` index for active votes.
+- Resetting voting rights soft-deletes votes so the employee can vote again.
 - Public users cannot read `votes`.
+- Public users cannot read `employees`.
+- Public users read vote totals only through the aggregate `public_drawings_with_votes` view.
 - Vote inserts happen through the server action using `SUPABASE_SERVICE_ROLE_KEY`, never from the browser.
 - A small in-memory rate limiter slows repeated vote submissions.
 

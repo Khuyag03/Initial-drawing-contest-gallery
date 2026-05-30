@@ -1,10 +1,20 @@
-import { Gallery } from "@/components/Gallery";
 import { getDrawings } from "@/app/actions/public";
+import { getCurrentEmployeeAccess } from "@/app/actions/employee";
+import { PublicVotingApp } from "@/components/PublicVotingApp";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const drawings = await getDrawings();
+  const employee = await getCurrentEmployeeAccess();
+
+  if (!employee) {
+    return (
+      <main className="min-h-screen bg-neutral-50">
+        <PublicVotingApp drawings={drawings} initialEmployee={null} />
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen">
@@ -36,6 +46,9 @@ export default async function HomePage() {
             <h1 className="text-4xl font-semibold leading-[0.96] text-neutral-950 sm:text-6xl lg:text-7xl">
               “МИНИЙ ЕРТӨНЦ” хүүхдийн гар зургийн уралдаан
             </h1>
+            <p className="mt-6 max-w-3xl text-base leading-7 text-neutral-700 sm:text-lg sm:leading-8">
+              Та насны ангилал тус бүрээс хамгийн их таалагдсан нэг бүтээлд саналаа өгөх боломжтой.
+            </p>
             <div className="mt-8 grid max-w-4xl gap-3 border-t border-neutral-950/15 pt-5 sm:grid-cols-[120px_1fr]">
               <p className="text-sm font-semibold text-neutral-950">Зорилго</p>
               <p className="text-base leading-7 text-neutral-700 sm:text-lg sm:leading-8">
@@ -56,12 +69,12 @@ export default async function HomePage() {
             <h2 className="text-2xl font-medium text-neutral-950 sm:text-3xl">Бүтээлүүд</h2>
           </div>
           <p className="max-w-md text-sm leading-6 text-neutral-500">
-            Саналын тоо нийтэд харагдахгүй, зөвхөн админ хэсэгт хадгалагдана.
+            Саналын тоо бүтээл бүр дээр харагдах бөгөөд нэг SAP код насны ангилал бүрт нэг удаа санал өгнө.
           </p>
         </header>
-
-        <Gallery drawings={drawings} />
       </section>
+
+      <PublicVotingApp drawings={drawings} initialEmployee={employee} />
     </main>
   );
 }

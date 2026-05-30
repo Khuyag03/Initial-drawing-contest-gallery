@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Хүүхдийн баярын гар зургийн санал хураалт",
-  description: "Ажилтнуудад зориулсан хүүхдийн гар зургийн нууц санал хураалтын галерей."
+  description: "SAP кодоор нэвтэрдэг хүүхдийн гар зургийн санал хураалтын галерей."
 };
 
 export default function RootLayout({
