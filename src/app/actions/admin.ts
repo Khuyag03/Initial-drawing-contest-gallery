@@ -14,6 +14,7 @@ import { isAgeCategory, isUuid, readText } from "@/lib/validators";
 import type {
   ActionState,
   AdminDrawingResult,
+  AgeCategory,
   DrawingUploadInput,
   FinalizeDrawingUploadInput,
   PreparedDrawingUpload
@@ -29,6 +30,12 @@ const IMAGE_TYPES = new Map([
 
 const ok = (message: string): ActionState => ({ status: "success", message });
 const fail = (message: string): ActionState => ({ status: "error", message });
+
+function getAgeCategoryStorageFolder(ageCategory: AgeCategory) {
+  return ageCategory
+    .replace(" нас", "")
+    .replace("–", "-");
+}
 
 function isFile(value: FormDataEntryValue | null): value is File {
   return (
@@ -89,10 +96,10 @@ function getPublicImageUrl(filePath: string) {
   return data.publicUrl;
 }
 
-async function uploadImage(file: File, ageCategory: string) {
+async function uploadImage(file: File, ageCategory: AgeCategory) {
   const supabase = createServiceSupabaseClient();
   const extension = IMAGE_TYPES.get(file.type) || "jpg";
-  const filePath = `${ageCategory}/${randomUUID()}.${extension}`;
+  const filePath = `${getAgeCategoryStorageFolder(ageCategory)}/${randomUUID()}.${extension}`;
   const bytes = Buffer.from(await file.arrayBuffer());
 
   const { error } = await supabase.storage.from(DRAWING_BUCKET).upload(filePath, bytes, {
@@ -114,7 +121,7 @@ type DrawingFieldResult =
       ok: true;
       title: string;
       childName: string | null;
-      ageCategory: "3-6" | "7-10" | "11-16";
+      ageCategory: AgeCategory;
     }
   | {
       ok: false;
@@ -199,7 +206,7 @@ export async function prepareDrawingUpload(input: DrawingUploadInput): Promise<P
 
   const supabase = createServiceSupabaseClient();
   const extension = IMAGE_TYPES.get(input.contentType) || "jpg";
-  const filePath = `${fields.ageCategory}/${randomUUID()}.${extension}`;
+  const filePath = `${getAgeCategoryStorageFolder(fields.ageCategory)}/${randomUUID()}.${extension}`;
   const { data, error } = await supabase.storage.from(DRAWING_BUCKET).createSignedUploadUrl(filePath);
 
   if (error || !data) {
@@ -231,7 +238,7 @@ export async function finalizeDrawingUpload(input: FinalizeDrawingUploadInput): 
   }
 
   const filePath = normalizePlainText(input.filePath, 260);
-  if (!filePath || !filePath.startsWith(`${fields.ageCategory}/`)) {
+  if (!filePath || !filePath.startsWith(`${getAgeCategoryStorageFolder(fields.ageCategory)}/`)) {
     return fail("Зургийн storage path буруу байна.");
   }
 

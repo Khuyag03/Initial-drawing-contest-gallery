@@ -4,7 +4,7 @@ create table if not exists public.drawings (
   id uuid primary key default gen_random_uuid(),
   title text not null,
   child_name text,
-  age_category text not null check (age_category in ('3-6', '7-10', '11-16')),
+  age_category text not null check (age_category in ('4–7 нас', '8–11 нас', '12–16 нас')),
   image_url text not null,
   created_at timestamptz not null default now()
 );
@@ -26,7 +26,7 @@ create table if not exists public.votes (
   sap_code text,
   employee_first_name text,
   employee_last_name text,
-  age_category text not null check (age_category in ('3-6', '7-10', '11-16')),
+  age_category text not null check (age_category in ('4–7 нас', '8–11 нас', '12–16 нас')),
   device_hash text,
   ip_hash text,
   user_agent_hash text,
@@ -48,11 +48,30 @@ alter table public.votes add column if not exists deleted_by text;
 alter table public.votes add column if not exists delete_reason text;
 alter table public.votes alter column device_hash drop not null;
 
+alter table public.drawings drop constraint if exists drawings_age_category_check;
+alter table public.votes drop constraint if exists votes_age_category_check;
+
+update public.drawings
+set age_category = case
+  when age_category in ('3-6', '3–6 нас', '3-6 нас') then '4–7 нас'
+  when age_category in ('7-10', '7–10 нас', '7-10 нас') then '8–11 нас'
+  when age_category in ('11-16', '11–16 нас', '11-16 нас') then '12–16 нас'
+  else age_category
+end;
+
 update public.votes
 set age_category = public.drawings.age_category
 from public.drawings
 where public.votes.drawing_id = public.drawings.id
   and public.votes.age_category is null;
+
+update public.votes
+set age_category = case
+  when age_category in ('3-6', '3–6 нас', '3-6 нас') then '4–7 нас'
+  when age_category in ('7-10', '7–10 нас', '7-10 нас') then '8–11 нас'
+  when age_category in ('11-16', '11–16 нас', '11-16 нас') then '12–16 нас'
+  else age_category
+end;
 
 alter table public.votes
   alter column age_category set not null;
@@ -64,18 +83,13 @@ alter table public.votes
   alter column employee_id set not null,
   alter column sap_code set not null;
 
-do $$
-begin
-  if not exists (
-    select 1
-    from pg_constraint
-    where conname = 'votes_age_category_check'
-      and conrelid = 'public.votes'::regclass
-  ) then
-    alter table public.votes
-      add constraint votes_age_category_check check (age_category in ('3-6', '7-10', '11-16'));
-  end if;
-end $$;
+alter table public.drawings
+  add constraint drawings_age_category_check
+  check (age_category in ('4–7 нас', '8–11 нас', '12–16 нас'));
+
+alter table public.votes
+  add constraint votes_age_category_check
+  check (age_category in ('4–7 нас', '8–11 нас', '12–16 нас'));
 
 alter table public.votes drop constraint if exists votes_device_hash_unique;
 drop index if exists votes_device_category_active_unique;

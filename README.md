@@ -72,7 +72,7 @@ Open `http://localhost:3000`.
 
 ## Voting Security
 
-- One vote is allowed per active SAP employee in each age category: `3-6`, `7-10`, and `11-16`.
+- One vote is allowed per active SAP employee in each age category: `4–7 нас`, `8–11 нас`, and `12–16 нас`.
 - SAP access is stored in a signed httpOnly cookie and revalidated server-side before each vote.
 - The client creates a localStorage device ID, a cookie device ID, and a browser fingerprint hash.
 - Device, IP, user-agent, and browser summary are stored only as optional audit metadata.

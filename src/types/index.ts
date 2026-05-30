@@ -1,4 +1,4 @@
-export const AGE_CATEGORIES = ["3-6", "7-10", "11-16"] as const;
+export const AGE_CATEGORIES = ["4–7 нас", "8–11 нас", "12–16 нас"] as const;
 export const EMPLOYEE_STATUSES = ["active", "inactive", "blocked"] as const;
 
 export type AgeCategory = (typeof AGE_CATEGORIES)[number];

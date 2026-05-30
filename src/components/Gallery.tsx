@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import clsx from "clsx";
 import { submitVote } from "@/app/actions/votes";
 import { getVoteIdentity } from "@/lib/client-device";
-import type { AgeCategory, Drawing, EmployeeAccess, VoteResult } from "@/types";
+import { AGE_CATEGORIES, type AgeCategory, type Drawing, type EmployeeAccess, type VoteResult } from "@/types";
 
 const SUCCESS_MESSAGE = "Таны санал амжилттай бүртгэгдлээ.";
 const ALREADY_VOTED_CATEGORY_MESSAGE = "Та энэ насны ангилалд аль хэдийн санал өгсөн байна.";
@@ -19,6 +19,7 @@ export function Gallery({ drawings, employee }: GalleryProps) {
   const [selected, setSelected] = useState<Drawing | null>(null);
   const [message, setMessage] = useState<VoteResult | null>(null);
   const [sessionVotes, setSessionVotes] = useState<Partial<Record<AgeCategory, string>>>({});
+  const [ageFilter, setAgeFilter] = useState<AgeCategory | "all">("all");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -44,11 +45,13 @@ export function Gallery({ drawings, employee }: GalleryProps) {
 
   const groupedDrawings = useMemo(
     () =>
-      drawings.map((drawing) => ({
-        ...drawing,
-        vote_count: voteCountOverrides[drawing.id] ?? drawing.vote_count
-      })),
-    [drawings, voteCountOverrides]
+      drawings
+        .filter((drawing) => ageFilter === "all" || drawing.age_category === ageFilter)
+        .map((drawing) => ({
+          ...drawing,
+          vote_count: voteCountOverrides[drawing.id] ?? drawing.vote_count
+        })),
+    [ageFilter, drawings, voteCountOverrides]
   );
   const selectedDrawing = selected
     ? (groupedDrawings.find((drawing) => drawing.id === selected.id) ?? selected)
@@ -106,8 +109,29 @@ export function Gallery({ drawings, employee }: GalleryProps) {
   }
 
   const categoryVoteNotice = (
-    <div className="mb-7 rounded-lg border border-neutral-200 bg-white px-5 py-4 text-sm leading-6 text-neutral-600">
-      Та насны ангилал тус бүрт нэг санал өгөх боломжтой.
+      <div className="mb-7 rounded-lg border border-neutral-200 bg-white px-5 py-4 text-sm leading-6 text-neutral-600">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <p>Та насны ангилал тус бүрт нэг санал өгөх боломжтой.</p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setAgeFilter("all")}
+            className={ageFilter === "all" ? "rounded-full bg-neutral-950 px-4 py-2 text-xs font-semibold text-white" : "rounded-full border border-neutral-200 px-4 py-2 text-xs font-semibold text-neutral-600 transition hover:border-neutral-950"}
+          >
+            Бүгд
+          </button>
+          {AGE_CATEGORIES.map((category) => (
+            <button
+              key={category}
+              type="button"
+              onClick={() => setAgeFilter(category)}
+              className={ageFilter === category ? "rounded-full bg-neutral-950 px-4 py-2 text-xs font-semibold text-white" : "rounded-full border border-neutral-200 px-4 py-2 text-xs font-semibold text-neutral-600 transition hover:border-neutral-950"}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 
@@ -192,6 +216,12 @@ export function Gallery({ drawings, employee }: GalleryProps) {
           );
         })}
       </section>
+
+      {groupedDrawings.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-neutral-300 bg-white px-6 py-12 text-center text-neutral-500">
+          Энэ насны ангилалд тохирох зураг алга.
+        </div>
+      ) : null}
 
       {selectedDrawing ? (
         <div
